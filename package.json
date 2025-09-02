@@ -1,24 +1,22 @@
 {
-  "name": "tauri-shadcn-tailwind-boilerplate",
+  "name": "meja",
   "private": false,
   "version": "1.0.0",
-  "description": "🚀 A modern desktop app boilerplate built with Tauri v2, Tailwind CSS v4, shadcn/ui, React 18, and TypeScript. Features glassmorphism design, blazing-fast performance, and developer experience.",
+  "description": "🗃️ A modern GUI database client built with Tauri v2, supporting MongoDB and other databases. Features beautiful UI with shadcn/ui and powerful table views.",
   "type": "module",
   "keywords": [
     "tauri",
     "tauri-v2",
-    "tailwindcss",
-    "tailwind-v4", 
+    "database",
+    "mongodb",
+    "gui",
+    "database-client",
     "shadcn-ui",
     "react",
     "typescript",
     "desktop-app",
-    "boilerplate",
-    "template",
-    "starter",
-    "glassmorphism",
-    "modern-ui",
-    "bun"
+    "tanstack-table",
+    "modern-ui"
   ],
   "author": {
     "name": "WABISABI",
@@ -43,10 +41,19 @@
     "tauri:build": "tauri build"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-separator": "^1.1.7",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "@tanstack/react-table": "^8.0.0",
     "@tauri-apps/api": ">=2.0.0",
     "@tauri-apps/plugin-shell": ">=2.0.0",
+    "mongodb": "^6.0.0",
+    "next-themes": "^0.4.6",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "sonner": "^2.0.7",
+    "zustand": "^4.0.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": ">=2.0.0",
@@ -63,7 +70,7 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.14",
     "globals": "^15.12.0",
-    "lucide-react": "^0.468.0",
+    "lucide-react": "^0.542.0",
     "tailwind-merge": "^2.5.5",
     "tailwindcss": "^4.0.0",
     "@tailwindcss/vite": "^4.0.0",
