@@ -1,0 +1,257 @@
+import { useMemo, useState } from 'react';
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  flexRender,
+  createColumnHelper,
+  SortingState,
+  ColumnFiltersState,
+  VisibilityState,
+} from '@tanstack/react-table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useAppStore } from '@/lib/store-mock';
+import { ChevronLeft, ChevronRight, Search, Loader2 } from 'lucide-react';
+
+function formatValue(value: any): string {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  
+  if (typeof value === 'object') {
+    if (value._id) return value._id.toString();
+    if (value instanceof Date) return value.toISOString();
+    return JSON.stringify(value);
+  }
+  
+  return String(value);
+}
+
+function getColumnType(value: any): string {
+  if (value === null || value === undefined) return 'text';
+  if (typeof value === 'number') return 'number';
+  if (typeof value === 'boolean') return 'boolean';
+  if (value instanceof Date) return 'date';
+  if (typeof value === 'object') return 'object';
+  return 'text';
+}
+
+export function DataTable() {
+  const {
+    tableData,
+    totalCount,
+    currentPage,
+    pageSize,
+    isLoading,
+    selectedCollection,
+    loadTableData,
+    setPageSize
+  } = useAppStore();
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [globalFilter, setGlobalFilter] = useState('');
+
+  // Generate columns based on data
+  const columns = useMemo(() => {
+    if (!tableData || tableData.length === 0) return [];
+
+    // Get all unique keys from all documents
+    const allKeys = new Set<string>();
+    tableData.forEach(doc => {
+      Object.keys(doc).forEach(key => allKeys.add(key));
+    });
+
+    const columnHelper = createColumnHelper<any>();
+
+    return Array.from(allKeys).map(key => 
+      columnHelper.accessor(key, {
+        id: key,
+        header: key,
+        cell: ({ getValue }) => {
+          const value = getValue();
+          return (
+            <div className="max-w-xs truncate" title={formatValue(value)}>
+              {formatValue(value)}
+            </div>
+          );
+        },
+        meta: {
+          type: getColumnType(tableData[0]?.[key])
+        }
+      })
+    );
+  }, [tableData]);
+
+  const table = useReactTable({
+    data: tableData || [],
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onColumnVisibilityChange: setColumnVisibility,
+    onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn: 'includesString',
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      globalFilter,
+    },
+  });
+
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  const handlePageChange = async (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      await loadTableData(newPage);
+    }
+  };
+
+  if (!selectedCollection) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center text-muted-foreground">
+          <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <p>Select a collection to view its data</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin" />
+          <p className="text-muted-foreground">Loading collection data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 flex flex-col p-4">
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold">{selectedCollection}</h2>
+            <p className="text-sm text-muted-foreground">
+              {totalCount} documents
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Search..."
+              value={globalFilter ?? ''}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 border rounded-md">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  No documents found.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between space-x-2 py-4">
+        <div className="flex items-center space-x-2">
+          <p className="text-sm font-medium">
+            Page {currentPage} of {totalPages}
+          </p>
+          <div className="flex items-center space-x-2">
+            <p className="text-sm text-muted-foreground">Rows per page</p>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="h-8 w-16 rounded border border-input bg-background px-2 text-sm"
+            >
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+              <option value={200}>200</option>
+            </select>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage <= 1 || isLoading}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage >= totalPages || isLoading}
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
