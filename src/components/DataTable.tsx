@@ -79,11 +79,15 @@ export function DataTable() {
     return Array.from(allKeys).map(key => 
       columnHelper.accessor(key, {
         id: key,
-        header: key,
+        header: ({ column }) => (
+          <div className="min-w-[150px] font-medium">
+            {key}
+          </div>
+        ),
         cell: ({ getValue }) => {
           const value = getValue();
           return (
-            <div className="max-w-xs truncate" title={formatValue(value)}>
+            <div className="min-w-[150px] max-w-xs truncate" title={formatValue(value)}>
               {formatValue(value)}
             </div>
           );
@@ -146,7 +150,7 @@ export function DataTable() {
   }
 
   return (
-    <div className="flex-1 flex flex-col p-4">
+    <div className="flex-1 flex flex-col p-4 w-full">
       <div className="mb-4">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -167,8 +171,9 @@ export function DataTable() {
         </div>
       </div>
 
-      <div className="flex-1 border rounded-md">
-        <Table>
+      <div className="w-full overflow-x-scroll flex-1 border rounded-md">
+        <div className="max-h-[calc(100vh-300px)]">
+          <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -207,7 +212,8 @@ export function DataTable() {
               </TableRow>
             )}
           </TableBody>
-        </Table>
+          </Table>
+        </div>
       </div>
 
       {/* Pagination */}
