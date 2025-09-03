@@ -1,15 +1,6 @@
 import { create } from 'zustand';
-import {mongodb_connect} from "@/util.ts";
+import {mongodb_connect, mongodb_count_documents, mongodb_find_documents} from "@/util.ts";
 // Dynamically import Tauri API only when available
-let invokeFunction: any = null;
-
-try {
-  if (typeof window !== 'undefined' && (window as any).__TAURI__) {
-    invokeFunction = require('@tauri-apps/api/core').invoke;
-  }
-} catch (e) {
-  console.warn('Tauri API not available:', e);
-}
 
 export interface ConnectionConfig {
   connection_url?: string;
@@ -113,9 +104,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Disconnect from MongoDB
   disconnect: async () => {
     try {
-      if (invokeFunction) {
         // No disconnect command needed for sync approach
-      }
     } catch (error) {
       console.warn('Error disconnecting:', error);
     }
@@ -145,24 +134,20 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ selectedCollection: collectionName, isLoading: true });
     
     try {
-      if (!invokeFunction) {
-        throw new Error('Tauri API not available');
-      }
-
-      const documents = await invokeFunction('mongodb_find_documents', {
-        database_name: selectedDatabase,
-        collection_name: collectionName,
+      const documents = await mongodb_find_documents({
+        databaseName: selectedDatabase,
+        collectionName: collectionName,
         page: 0,
-        per_page: get().pageSize,
-        documents_filter: {},
-        documents_projection: {},
-        documents_sort: {}
+        perPage: get().pageSize,
+        documentsFilter: {},
+        documentsProjection: {},
+        documentsSort: {}
       });
       
-      const total_count = await invokeFunction('mongodb_count_documents', {
-        database_name: selectedDatabase,
-        collection_name: collectionName,
-        documents_filter: {}
+      const total_count = await mongodb_count_documents({
+        databaseName: selectedDatabase,
+        collectionName: collectionName,
+        documentsFilter: {}
       });
       
       set({
@@ -188,20 +173,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isLoading: true, currentPage: page });
     
     try {
-      if (!invokeFunction) {
-        throw new Error('Tauri API not available');
-      }
-
-      const documents = await invokeFunction('mongodb_find_documents', {
-        database_name: selectedDatabase,
-        collection_name: selectedCollection,
+      const documents = await mongodb_find_documents({
+        databaseName: selectedDatabase,
+        collectionName: selectedCollection,
         page: page - 1,
-        per_page: pageSize,
-        documents_filter: {},
-        documents_projection: {},
-        documents_sort: {}
+        perPage: pageSize,
+        documentsFilter: {},
+        documentsProjection: {},
+        documentsSort: {}
       });
-      
+
       set({ tableData: documents, isLoading: false });
     } catch (error) {
       console.error('Failed to load table data:', error);
