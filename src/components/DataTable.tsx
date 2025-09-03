@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useAppStore } from '@/lib/store-mock';
+import { useAppStore } from '@/lib/store';
 import { ChevronLeft, ChevronRight, Search, Loader2 } from 'lucide-react';
 
 function formatValue(value: any): string {

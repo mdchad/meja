@@ -3,11 +3,8 @@ import { DatabaseSidebar } from "@/components/DatabaseSidebar";
 import { DataTable } from "@/components/DataTable";
 
 function App() {
-  console.log('App component rendering');
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-14 items-center px-4">
           <div className="mr-4 flex">
@@ -18,8 +15,6 @@ function App() {
           </div>
         </div>
       </header>
-
-      {/* Main Content */}
       <div className="flex flex-1">
         <DatabaseSidebar />
         <DataTable />

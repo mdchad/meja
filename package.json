@@ -25,12 +25,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/wabisabi/tauri-shadcn-tailwind-boilerplate.git"
+    "url": "https://github.com/mdchad/meja.git"
   },
   "bugs": {
-    "url": "https://github.com/wabisabi/tauri-shadcn-tailwind-boilerplate/issues"
+    "url": "https://github.com/mdchad/meja/issues"
   },
-  "homepage": "https://github.com/wabisabi/tauri-shadcn-tailwind-boilerplate#readme",
+  "homepage": "https://github.com/mdchad/meja#readme",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -47,8 +47,8 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tanstack/react-table": "^8.0.0",
     "@tauri-apps/api": ">=2.0.0",
+    "@tauri-apps/plugin-log": "~2",
     "@tauri-apps/plugin-shell": ">=2.0.0",
-    "mongodb": "^6.0.0",
     "next-themes": "^0.4.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

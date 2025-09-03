@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { useAppStore, ConnectionConfig } from '@/lib/store-mock';
+import { useAppStore, ConnectionConfig } from '@/lib/store';
 import { Database, Loader2, Plus, Unplug } from 'lucide-react';
 
 export function ConnectionManager() {
@@ -25,20 +25,20 @@ export function ConnectionManager() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [connectionType, setConnectionType] = useState<'url' | 'manual'>('url');
-  const [formData, setFormData] = useState({
-    connectionUrl: 'mongodb://localhost:27017',
+  const [formData, setFormData] = useState<ConnectionConfig>({
+    connection_url: 'mongodb://localhost:27017',
     host: 'localhost',
     port: 27017,
     database: '',
     username: '',
     password: '',
-    authDatabase: 'admin',
+    auth_database: 'admin',
     ssl: false
   });
 
   const handleConnect = async () => {
     const config = connectionType === 'url' 
-      ? parseConnectionUrl(formData.connectionUrl)
+      ? parseConnectionUrl(formData.connection_url!)
       : formData;
     await connect(config);
     if (useAppStore.getState().isConnected) {
@@ -67,7 +67,7 @@ export function ConnectionManager() {
       {isConnected ? (
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">
-            {connectionConfig?.connectionUrl || `${connectionConfig?.host}:${connectionConfig?.port}`}
+            {connectionConfig?.connection_url || `${connectionConfig?.host}:${connectionConfig?.port}`}
           </span>
           <Button
             variant="outline"
@@ -126,8 +126,8 @@ export function ConnectionManager() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">MongoDB Connection URL</label>
                   <Input
-                    value={formData.connectionUrl}
-                    onChange={(e) => setFormData(prev => ({ ...prev, connectionUrl: e.target.value }))}
+                    value={formData.connection_url}
+                    onChange={(e) => setFormData(prev => ({ ...prev, connection_url: e.target.value }))}
                     placeholder="mongodb://localhost:27017/mydb"
                   />
                   <p className="text-xs text-muted-foreground">
@@ -188,8 +188,8 @@ export function ConnectionManager() {
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Auth Database</label>
                     <Input
-                      value={formData.authDatabase}
-                      onChange={(e) => setFormData(prev => ({ ...prev, authDatabase: e.target.value }))}
+                      value={formData.auth_database}
+                      onChange={(e) => setFormData(prev => ({ ...prev, auth_database: e.target.value }))}
                       placeholder="admin"
                     />
                   </div>
@@ -237,14 +237,14 @@ function parseConnectionUrl(url: string): ConnectionConfig {
     const parsed = new URL(url);
     
     return {
-      connectionUrl: url,
+      connection_url: url,
       host: parsed.hostname || 'localhost',
       port: parseInt(parsed.port) || 27017,
       database: parsed.pathname.slice(1) || undefined,
       username: parsed.username || undefined,
       password: parsed.password || undefined,
       ssl: parsed.protocol === 'mongodb+srv:' || parsed.searchParams.get('ssl') === 'true',
-      authDatabase: parsed.searchParams.get('authSource') || 'admin'
+      auth_database: parsed.searchParams.get('authSource') || 'admin'
     };
   } catch (error) {
     // Fallback for invalid URLs
