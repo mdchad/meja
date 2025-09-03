@@ -1,4 +1,4 @@
-import { useAppStore } from '@/lib/store-mock';
+import { useAppStore } from '@/lib/store';
 import { Database, Table, ChevronRight, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';

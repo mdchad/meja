@@ -1,13 +1,24 @@
 import { create } from 'zustand';
-import { MongoClient } from 'mongodb';
+import {mongodb_connect} from "@/util.ts";
+// Dynamically import Tauri API only when available
+let invokeFunction: any = null;
+
+try {
+  if (typeof window !== 'undefined' && (window as any).__TAURI__) {
+    invokeFunction = require('@tauri-apps/api/core').invoke;
+  }
+} catch (e) {
+  console.warn('Tauri API not available:', e);
+}
 
 export interface ConnectionConfig {
+  connection_url?: string;
   host: string;
   port: number;
   database?: string;
   username?: string;
   password?: string;
-  authDatabase?: string;
+  auth_database?: string;
   ssl?: boolean;
 }
 
@@ -18,7 +29,6 @@ export interface DatabaseInfo {
 
 export interface AppState {
   // Connection state
-  client: MongoClient | null;
   connectionConfig: ConnectionConfig | null;
   isConnected: boolean;
   isConnecting: boolean;
@@ -47,7 +57,6 @@ export interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => ({
   // Initial state
-  client: null,
   connectionConfig: null,
   isConnected: false,
   isConnecting: false,
@@ -61,56 +70,57 @@ export const useAppStore = create<AppState>((set, get) => ({
   pageSize: 50,
   isLoading: false,
 
-  // Connect to MongoDB
+  // Connect to MongoDB via Tauri backend
   connect: async (config: ConnectionConfig) => {
     set({ isConnecting: true, connectionError: null });
     
     try {
-      const connectionString = buildConnectionString(config);
-      const client = new MongoClient(connectionString);
-      
-      await client.connect();
-      
-      // Test connection and get databases
-      const adminDb = client.db().admin();
-      const dbList = await adminDb.listDatabases();
-      
-      const databases: DatabaseInfo[] = [];
-      for (const dbInfo of dbList.databases) {
-        if (dbInfo.name !== 'admin' && dbInfo.name !== 'local' && dbInfo.name !== 'config') {
-          const db = client.db(dbInfo.name);
-          const collections = await db.listCollections().toArray();
-          databases.push({
-            name: dbInfo.name,
-            collections: collections.map(col => col.name)
-          });
-        }
-      }
-      
+      // Check if we're in Tauri environment
+      // Use simpler parameters like the working example
+      // const result = await invokeFunction('mongodb_connect', {
+      //   url: config.host,
+      //   port: config.port
+      // });
+
+      const result = await mongodb_connect({
+        url: config.connection_url!,
+        port: config.port,
+      });
+
+      // Parse the result to extract databases
+      const databases: DatabaseInfo[] = Object.keys(result).map(dbName => ({
+        name: dbName,
+        collections: result[dbName].collections?.map((col: any) => col.name) || []
+      }));
+
       set({
-        client,
         connectionConfig: config,
         isConnected: true,
         isConnecting: false,
-        databases
+        databases,
+        connectionError: null
       });
     } catch (error) {
+      console.error('Connection failed:', error);
+      const errorMessage = typeof error === 'string' ? error : 'Connection failed';
       set({
         isConnecting: false,
-        connectionError: error instanceof Error ? error.message : 'Connection failed'
+        connectionError: errorMessage
       });
     }
   },
 
   // Disconnect from MongoDB
   disconnect: async () => {
-    const { client } = get();
-    if (client) {
-      await client.close();
+    try {
+      if (invokeFunction) {
+        // No disconnect command needed for sync approach
+      }
+    } catch (error) {
+      console.warn('Error disconnecting:', error);
     }
     
     set({
-      client: null,
       connectionConfig: null,
       isConnected: false,
       databases: [],
@@ -129,58 +139,76 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // Select a collection and load its data
   selectCollection: async (collectionName: string) => {
-    const { client, selectedDatabase } = get();
-    if (!client || !selectedDatabase) return;
+    const { selectedDatabase } = get();
+    if (!selectedDatabase) return;
 
     set({ selectedCollection: collectionName, isLoading: true });
     
     try {
-      const db = client.db(selectedDatabase);
-      const collection = db.collection(collectionName);
+      if (!invokeFunction) {
+        throw new Error('Tauri API not available');
+      }
+
+      const documents = await invokeFunction('mongodb_find_documents', {
+        database_name: selectedDatabase,
+        collection_name: collectionName,
+        page: 0,
+        per_page: get().pageSize,
+        documents_filter: {},
+        documents_projection: {},
+        documents_sort: {}
+      });
       
-      // Get total count
-      const totalCount = await collection.countDocuments();
-      
-      // Load first page
-      const tableData = await collection
-        .find({})
-        .limit(get().pageSize)
-        .toArray();
+      const total_count = await invokeFunction('mongodb_count_documents', {
+        database_name: selectedDatabase,
+        collection_name: collectionName,
+        documents_filter: {}
+      });
       
       set({
-        tableData,
-        totalCount,
+        tableData: documents,
+        totalCount: total_count,
         currentPage: 1,
         isLoading: false
       });
     } catch (error) {
       console.error('Failed to load collection data:', error);
-      set({ isLoading: false });
+      set({ 
+        isLoading: false,
+        connectionError: typeof error === 'string' ? error : 'Failed to load collection data'
+      });
     }
   },
 
   // Load table data for a specific page
   loadTableData: async (page = 1) => {
-    const { client, selectedDatabase, selectedCollection, pageSize } = get();
-    if (!client || !selectedDatabase || !selectedCollection) return;
+    const { selectedDatabase, selectedCollection, pageSize } = get();
+    if (!selectedDatabase || !selectedCollection) return;
 
     set({ isLoading: true, currentPage: page });
     
     try {
-      const db = client.db(selectedDatabase);
-      const collection = db.collection(selectedCollection);
+      if (!invokeFunction) {
+        throw new Error('Tauri API not available');
+      }
+
+      const documents = await invokeFunction('mongodb_find_documents', {
+        database_name: selectedDatabase,
+        collection_name: selectedCollection,
+        page: page - 1,
+        per_page: pageSize,
+        documents_filter: {},
+        documents_projection: {},
+        documents_sort: {}
+      });
       
-      const skip = (page - 1) * pageSize;
-      const tableData = await collection
-        .find({})
-        .skip(skip)
-        .limit(pageSize)
-        .toArray();
-      
-      set({ tableData, isLoading: false });
+      set({ tableData: documents, isLoading: false });
     } catch (error) {
       console.error('Failed to load table data:', error);
-      set({ isLoading: false });
+      set({ 
+        isLoading: false,
+        connectionError: typeof error === 'string' ? error : 'Failed to load table data'
+      });
     }
   },
 
@@ -191,33 +219,3 @@ export const useAppStore = create<AppState>((set, get) => ({
     get().loadTableData(get().currentPage);
   }
 }));
-
-function buildConnectionString(config: ConnectionConfig): string {
-  const { host, port, database, username, password, authDatabase, ssl } = config;
-  
-  let connectionString = 'mongodb://';
-  
-  if (username && password) {
-    connectionString += `${encodeURIComponent(username)}:${encodeURIComponent(password)}@`;
-  }
-  
-  connectionString += `${host}:${port}`;
-  
-  if (database) {
-    connectionString += `/${database}`;
-  }
-  
-  const params = new URLSearchParams();
-  if (authDatabase) {
-    params.append('authSource', authDatabase);
-  }
-  if (ssl) {
-    params.append('ssl', 'true');
-  }
-  
-  if (params.toString()) {
-    connectionString += `?${params.toString()}`;
-  }
-  
-  return connectionString;
-}
