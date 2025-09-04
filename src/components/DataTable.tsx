@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { QueryInput } from '@/components/QueryInput';
 import { useAppStore } from '@/lib/store';
 import { ChevronLeft, ChevronRight, Search, Loader2 } from 'lucide-react';
 
@@ -55,6 +56,7 @@ export function DataTable() {
     pageSize,
     isLoading,
     selectedCollection,
+    isQueryActive,
     loadTableData,
     setPageSize
   } = useAppStore();
@@ -79,7 +81,7 @@ export function DataTable() {
     return Array.from(allKeys).map(key => 
       columnHelper.accessor(key, {
         id: key,
-        header: ({ column }) => (
+        header: () => (
           <div className="min-w-[150px] font-medium">
             {key}
           </div>
@@ -156,18 +158,24 @@ export function DataTable() {
           <div>
             <h2 className="text-lg font-semibold">{selectedCollection}</h2>
             <p className="text-sm text-muted-foreground">
-              {totalCount} documents
+              {totalCount} documents {isQueryActive && <span className="text-green-600">(filtered)</span>}
             </p>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="Search..."
-              value={globalFilter ?? ''}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="max-w-sm"
-            />
-          </div>
+        </div>
+        
+        {/* Query Input */}
+        <div className="mb-4">
+          <QueryInput />
+        </div>
+        
+        {/* Local Search within results */}
+        <div className="flex items-center justify-end mb-2">
+          <Input
+            placeholder="Search in results..."
+            value={globalFilter ?? ''}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            className="max-w-sm"
+          />
         </div>
       </div>
 

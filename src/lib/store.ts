@@ -37,6 +37,12 @@ export interface AppState {
   pageSize: number;
   isLoading: boolean;
   
+  // Query state
+  currentQuery: string;
+  queryError: string | null;
+  queryFilter: Record<string, unknown>;
+  isQueryActive: boolean;
+  
   // Actions
   connect: (config: ConnectionConfig) => Promise<void>;
   disconnect: () => Promise<void>;
@@ -44,6 +50,8 @@ export interface AppState {
   selectCollection: (collectionName: string) => Promise<void>;
   loadTableData: (page?: number) => Promise<void>;
   setPageSize: (size: number) => void;
+  executeQuery: (query: string) => Promise<void>;
+  clearQuery: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -60,6 +68,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   currentPage: 1,
   pageSize: 50,
   isLoading: false,
+  
+  // Query state
+  currentQuery: '',
+  queryError: null,
+  queryFilter: {},
+  isQueryActive: false,
 
   // Connect to MongoDB via Tauri backend
   connect: async (config: ConnectionConfig) => {
@@ -131,7 +145,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const { selectedDatabase } = get();
     if (!selectedDatabase) return;
 
-    set({ selectedCollection: collectionName, isLoading: true });
+    set({ selectedCollection: collectionName, isLoading: true, currentQuery: '', queryError: null, isQueryActive: false });
     
     try {
       const documents = await mongodb_find_documents({
@@ -154,7 +168,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         tableData: documents,
         totalCount: total_count,
         currentPage: 1,
-        isLoading: false
+        isLoading: false,
+        queryFilter: {}
       });
     } catch (error) {
       console.error('Failed to load collection data:', error);
@@ -167,7 +182,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // Load table data for a specific page
   loadTableData: async (page = 1) => {
-    const { selectedDatabase, selectedCollection, pageSize } = get();
+    const { selectedDatabase, selectedCollection, pageSize, queryFilter } = get();
     if (!selectedDatabase || !selectedCollection) return;
 
     set({ isLoading: true, currentPage: page });
@@ -178,7 +193,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         collectionName: selectedCollection,
         page: page - 1,
         perPage: pageSize,
-        documentsFilter: {},
+        documentsFilter: queryFilter,
         documentsProjection: {},
         documentsSort: {}
       });
@@ -198,5 +213,76 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ pageSize: size });
     // Reload current page with new page size
     get().loadTableData(get().currentPage);
+  },
+
+  // Execute a query
+  executeQuery: async (query: string) => {
+    const { selectedDatabase, selectedCollection, pageSize } = get();
+    if (!selectedDatabase || !selectedCollection) return;
+
+    // Clear previous query error
+    set({ queryError: null, currentQuery: query });
+
+    // Validate and parse JSON query
+    let parsedQuery: Record<string, unknown>;
+    try {
+      if (query.trim() === '') {
+        parsedQuery = {};
+        set({ isQueryActive: false });
+      } else {
+        parsedQuery = JSON.parse(query);
+        set({ isQueryActive: true });
+      }
+    } catch (error) {
+      set({ queryError: 'Invalid JSON format' });
+      return;
+    }
+
+    set({ isLoading: true, queryFilter: parsedQuery, currentPage: 1 });
+    
+    try {
+      // Get documents with the query filter
+      const documents = await mongodb_find_documents({
+        databaseName: selectedDatabase,
+        collectionName: selectedCollection,
+        page: 0,
+        perPage: pageSize,
+        documentsFilter: parsedQuery,
+        documentsProjection: {},
+        documentsSort: {}
+      });
+      
+      // Get total count with the filter
+      const total_count = await mongodb_count_documents({
+        databaseName: selectedDatabase,
+        collectionName: selectedCollection,
+        documentsFilter: parsedQuery
+      });
+      
+      set({
+        tableData: documents,
+        totalCount: total_count,
+        isLoading: false
+      });
+    } catch (error) {
+      console.error('Failed to execute query:', error);
+      set({ 
+        isLoading: false,
+        queryError: typeof error === 'string' ? error : 'Query execution failed'
+      });
+    }
+  },
+
+  // Clear the current query
+  clearQuery: () => {
+    const state = get();
+    set({ 
+      currentQuery: '', 
+      queryError: null, 
+      queryFilter: {}, 
+      isQueryActive: false 
+    });
+    // Reload data without filters
+    state.loadTableData(1);
   }
 }));
