@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { QueryInput } from '@/components/QueryInput';
 import { useAppStore } from '@/lib/store';
-import { ChevronLeft, ChevronRight, Search, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 function formatValue(value: any): string {
   if (value === null || value === undefined) {
@@ -81,15 +81,31 @@ export function DataTable() {
     return Array.from(allKeys).map(key => 
       columnHelper.accessor(key, {
         id: key,
-        header: () => (
-          <div className="min-w-[150px] font-medium">
-            {key}
-          </div>
-        ),
+        header: ({ column }) => {
+          const getSortIcon = () => {
+            const isSorted = column.getIsSorted();
+            if (isSorted === 'asc') return <ArrowUp className="h-4 w-4" />;
+            if (isSorted === 'desc') return <ArrowDown className="h-4 w-4" />;
+            return <ArrowUpDown className="h-4 w-4" />;
+          };
+
+          return (
+            <Button
+              variant="ghost"
+              className="h-auto p-0 font-medium hover:bg-transparent w-full"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              <div className="w-[180px] flex items-center justify-between">
+                <span className="truncate">{key}</span>
+                {getSortIcon()}
+              </div>
+            </Button>
+          );
+        },
         cell: ({ getValue }) => {
           const value = getValue();
           return (
-            <div className="min-w-[150px] max-w-xs truncate" title={formatValue(value)}>
+            <div className="w-[180px] truncate" title={formatValue(value)}>
               {formatValue(value)}
             </div>
           );
@@ -186,7 +202,7 @@ export function DataTable() {
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead key={header.id} className="w-[180px] bg-tint-300">
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -206,7 +222,7 @@ export function DataTable() {
                   data-state={row.getIsSelected() && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="w-[180px]">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
