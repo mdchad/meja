@@ -9,11 +9,12 @@ function App() {
         <DatabaseSidebar />
         <div className="min-w-0">
           <header className="border-b border-tint-100 bg-tint-300">
-            <div className="flex h-14 items-center px-4">
+            <div className="grid grid-cols-[1fr_auto]">
               {/*<div className="mr-4 flex">*/}
               {/*  <h1 className="text-lg font-semibold">Meja 🗃️</h1>*/}
               {/*</div>*/}
-              <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
+              <div data-tauri-drag-region className="flex flex-1 w-full"></div>
+              <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end px-4 p-2">
                 <ConnectionManager />
               </div>
             </div>

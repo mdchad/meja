@@ -12,13 +12,25 @@
   "app": {
     "windows": [
       {
-        "title": "Meja - Database Client",
+        "title": "",
+        "titleBarStyle": "Overlay",
         "width": 1200,
         "height": 800
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "capabilities": [
+        {
+          "identifier": "draggable-window",
+          "windows": [
+            "*"
+          ],
+          "permissions": [
+            "core:window:allow-start-dragging"
+          ]
+        }
+      ]
     }
   },
   "bundle": {

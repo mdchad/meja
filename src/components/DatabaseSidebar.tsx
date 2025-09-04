@@ -37,6 +37,7 @@ export function DatabaseSidebar() {
   if (!isConnected) {
     return (
       <div className="border-r border-tint-100 bg-tint-200 p-4">
+        <div data-tauri-drag-region className="h-10 w-full"></div>
         <div className="text-center text-muted-foreground">
           <Database className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm">Connect to a database to browse collections</p>
@@ -47,6 +48,7 @@ export function DatabaseSidebar() {
 
   return (
     <div className="border-r border-tint-100 bg-tint-200">
+      <div data-tauri-drag-region className="h-10 w-full"></div>
       <div className="p-4 border-b">
         <h3 className="font-medium text-sm">Databases</h3>
       </div>
