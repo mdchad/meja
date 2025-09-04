@@ -4,11 +4,11 @@ import { DataTable } from "@/components/DataTable";
 
 function App() {
   return (
-    <div className="min-h-screen bg-background w-screen">
+    <div className="min-h-screen bg-background w-screen font-sans">
       <div className="grid grid-cols-[280px_1fr] min-w-0 h-screen">
         <DatabaseSidebar />
         <div className="min-w-0">
-          <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <header className="border-b border-tint-100 bg-tint-300">
             <div className="flex h-14 items-center px-4">
               {/*<div className="mr-4 flex">*/}
               {/*  <h1 className="text-lg font-semibold">Meja 🗃️</h1>*/}
