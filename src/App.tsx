@@ -4,20 +4,22 @@ import { DataTable } from "@/components/DataTable";
 
 function App() {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-14 items-center px-4">
-          <div className="mr-4 flex">
-            <h1 className="text-lg font-semibold">Meja 🗃️</h1>
-          </div>
-          <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-            <ConnectionManager />
-          </div>
-        </div>
-      </header>
-      <div className="flex flex-1">
+    <div className="min-h-screen bg-background w-screen">
+      <div className="grid grid-cols-[280px_1fr] min-w-0 h-screen">
         <DatabaseSidebar />
-        <DataTable />
+        <div className="min-w-0">
+          <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex h-14 items-center px-4">
+              {/*<div className="mr-4 flex">*/}
+              {/*  <h1 className="text-lg font-semibold">Meja 🗃️</h1>*/}
+              {/*</div>*/}
+              <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
+                <ConnectionManager />
+              </div>
+            </div>
+          </header>
+          <DataTable />
+        </div>
       </div>
     </div>
   );

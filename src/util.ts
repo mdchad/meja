@@ -43,13 +43,11 @@ export const useWindowDimensions = () => {
 export const mongodb_aggregate_documents = async ({
                                                     databaseName,
                                                     collectionName,
-                                                    idx,
                                                     sampleCount,
                                                     stages,
                                                   }: {
   databaseName: string;
   collectionName: string;
-  idx: number;
   sampleCount: number;
   stages: { stageBody: string; stageOperation: string }[];
 }) =>

@@ -26,7 +26,7 @@ export function ConnectionManager() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [connectionType, setConnectionType] = useState<'url' | 'manual'>('url');
   const [formData, setFormData] = useState<ConnectionConfig>({
-    connection_url: 'mongodb://localhost:27017',
+    connection_url: import.meta.env.VITE_DB_URL || 'mongodb://localhost:27017',
     host: 'localhost',
     port: 27017,
     database: '',
@@ -66,9 +66,9 @@ export function ConnectionManager() {
 
       {isConnected ? (
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">
-            {connectionConfig?.connection_url || `${connectionConfig?.host}:${connectionConfig?.port}`}
-          </span>
+          {/*<span className="text-xs text-muted-foreground">*/}
+          {/*  {connectionConfig?.connection_url || `${connectionConfig?.host}:${connectionConfig?.port}`}*/}
+          {/*</span>*/}
           <Button
             variant="outline"
             size="sm"
