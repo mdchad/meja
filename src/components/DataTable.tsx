@@ -84,15 +84,15 @@ export function DataTable() {
         header: ({ column }) => {
           const getSortIcon = () => {
             const isSorted = column.getIsSorted();
-            if (isSorted === 'asc') return <ArrowUp className="h-4 w-4" />;
-            if (isSorted === 'desc') return <ArrowDown className="h-4 w-4" />;
+            if (isSorted === 'asc') return <ArrowUp className="h-4 w-4 stroke-blue-500" />;
+            if (isSorted === 'desc') return <ArrowDown className="h-4 w-4 stroke-blue-500" />;
             return <ArrowUpDown className="h-4 w-4" />;
           };
 
           return (
             <Button
               variant="ghost"
-              className="h-auto p-0 font-medium hover:bg-transparent w-full"
+              className="h-auto p-0 font-medium hover:bg-transparent w-full cursor-pointer"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
               <div className="w-[180px] flex items-center justify-between">
@@ -123,7 +123,7 @@ export function DataTable() {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    // getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -156,16 +156,16 @@ export function DataTable() {
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin" />
-          <p className="text-muted-foreground">Loading collection data...</p>
-        </div>
-      </div>
-    );
-  }
+  // if (isLoading) {
+  //   return (
+  //     <div className="flex-1 flex items-center justify-center">
+  //       <div className="text-center">
+  //         <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin" />
+  //         <p className="text-muted-foreground">Loading collection data...</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="flex-1 flex flex-col p-4 w-full">
@@ -195,50 +195,61 @@ export function DataTable() {
         </div>
       </div>
 
-      <div className="w-full overflow-x-scroll flex-1 border rounded-md">
-        <div className="max-h-[calc(100vh-300px)]">
-          <Table className="">
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="w-[180px] bg-tint-300">
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="w-[180px]">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+      {isLoading ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin" />
+                <p className="text-muted-foreground">Loading collection data...</p>
+              </div>
+            </div>
+          ) : (
+            <div className="w-full overflow-x-scroll flex-1 border rounded-md">
+              <div className="max-h-[calc(100vh-300px)]">
+                <Table className="">
+                <TableHeader>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableHead key={header.id} className="w-[180px] bg-tint-300">
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                        </TableHead>
+                      ))}
+                    </TableRow>
                   ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No documents found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-          </Table>
-        </div>
-      </div>
+                </TableHeader>
+                <TableBody>
+                  {table.getRowModel().rows?.length ? (
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow
+                        key={row.id}
+                        data-state={row.getIsSelected() && "selected"}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id} className="w-[180px]">
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="h-24 text-center">
+                        No documents found.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+                </Table>
+              </div>
+            </div>
+          )
+      }
+
 
       {/* Pagination */}
       <div className="flex items-center justify-between space-x-2 py-4">
