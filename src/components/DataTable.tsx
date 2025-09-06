@@ -208,7 +208,7 @@ export function DataTable() {
       </div>
 
       {isLoading ? (
-            <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin" />
                 <p className="text-muted-foreground">Loading collection data...</p>
@@ -216,13 +216,13 @@ export function DataTable() {
             </div>
           ) : (
             <div className={`w-full overflow-x-scroll flex-1 border rounded-md ${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`}>
-              <div className="max-h-[calc(100vh-300px)]">
+              <div className="max-h-[calc(100vh-300px)] overflow-y-auto">
                 <Table className={`${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`} style={{
                     ...columnSizeVars,
                     width: table.getCenterTotalSize(),
                     tableLayout: 'fixed',
                   }}>
-                <TableHeader>
+                <TableHeader className="sticky top-0 z-10 bg-tint-300 border-b border-border shadow-sm">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <TableRow key={headerGroup.id}>
                       {headerGroup.headers.map((header) => (
@@ -230,7 +230,7 @@ export function DataTable() {
                           {...{
                             key: header.id,
                             colSpan: header.colSpan,
-                            className: "relative select-none",
+                            className: "relative select-none bg-tint-300",
                             style: {
                               width: `calc(var(--header-${header.id}-size) * 1px)`,
                             },
@@ -299,7 +299,7 @@ export function DataTable() {
             </select>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
