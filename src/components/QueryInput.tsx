@@ -36,8 +36,7 @@ export function QueryInput() {
       <div className="flex items-center gap-2">
         <div className="flex-1 relative">
           <Input
-            style={{ 'fontVariantLigatures': 'none' }}
-            placeholder='{ \"field\": \"value\" }'
+            placeholder='{ "field": "value" }'
             value={localQuery}
             spellCheck={false}
             onChange={(e) => setLocalQuery(e.target.value)}
