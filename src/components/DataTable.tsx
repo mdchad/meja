@@ -27,26 +27,6 @@ import { QueryInput } from '@/components/QueryInput';
 import { useAppStore } from '@/lib/store';
 import { ChevronLeft, ChevronRight, Search, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
-function formatValue(value: any): string {
-  if (value === null || value === undefined) {
-    return '';
-  }
-  
-  if (typeof value === 'object') {
-    if (value._id) return value._id.toString();
-    if (value instanceof Date) return value.toISOString();
-    
-    // Simplified: just show the $oid value directly
-    if (value && typeof value === 'object' && value.$oid && typeof value.$oid === 'string') {
-      return value.$oid;
-    }
-    
-    return JSON.stringify(value);
-  }
-  
-  return String(value);
-}
-
 function getColumnType(value: any): string {
   if (value === null || value === undefined) return 'text';
   if (typeof value === 'number') return 'number';
@@ -95,7 +75,7 @@ export function DataTable() {
         size: 180,
         minSize: 80,
         maxSize: 400,
-        header: ({ column, header }) => {
+        header: ({ column }) => {
           const getSortIcon = () => {
             const isSorted = column.getIsSorted();
             if (isSorted === 'asc') return <ArrowUp className="h-4 w-4 stroke-blue-500" />;
@@ -202,15 +182,6 @@ export function DataTable() {
   return (
     <div className="flex-1 flex flex-col p-4 w-full">
       <div className="mb-4">
-        <pre style={{ minHeight: '10rem' }}>
-        {JSON.stringify(
-          {
-            columnSizing: table.getState().columnSizing,
-          },
-          null,
-          2
-        )}
-      </pre>
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold">{selectedCollection}</h2>
