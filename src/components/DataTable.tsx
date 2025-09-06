@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, memo } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -9,6 +9,9 @@ import {
   SortingState,
   ColumnFiltersState,
   VisibilityState,
+  ColumnResizeMode,
+  ColumnResizeDirection,
+  Table as TanStackTable,
 } from '@tanstack/react-table';
 import {
   Table,
@@ -33,9 +36,9 @@ function formatValue(value: any): string {
     if (value._id) return value._id.toString();
     if (value instanceof Date) return value.toISOString();
     
-    // Check if it's a MongoDB ObjectId in { "$oid": "..." } format
+    // Simplified: just show the $oid value directly
     if (value && typeof value === 'object' && value.$oid && typeof value.$oid === 'string') {
-      return `ObjectId("${value.$oid}")`;
+      return value.$oid;
     }
     
     return JSON.stringify(value);
@@ -70,6 +73,8 @@ export function DataTable() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [globalFilter, setGlobalFilter] = useState('');
+  const [columnResizeMode, setColumnResizeMode] = useState<ColumnResizeMode>('onChange');
+  const [columnResizeDirection, setColumnResizeDirection] = useState<ColumnResizeDirection>('ltr');
 
   // Generate columns based on data
   const columns = useMemo(() => {
@@ -86,7 +91,11 @@ export function DataTable() {
     return Array.from(allKeys).map(key => 
       columnHelper.accessor(key, {
         id: key,
-        header: ({ column }) => {
+        enableResizing: true,
+        size: 180,
+        minSize: 80,
+        maxSize: 400,
+        header: ({ column, header }) => {
           const getSortIcon = () => {
             const isSorted = column.getIsSorted();
             if (isSorted === 'asc') return <ArrowUp className="h-4 w-4 stroke-blue-500" />;
@@ -97,10 +106,10 @@ export function DataTable() {
           return (
             <Button
               variant="ghost"
-              className="h-auto p-0 font-medium hover:bg-transparent w-full cursor-pointer"
+              className="h-auto p-0 font-medium hover:bg-transparent w-full cursor-pointer select-none"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
-              <div className="w-[180px] flex items-center justify-between">
+              <div className="flex items-center justify-between w-full select-none">
                 <span className="truncate">{key}</span>
                 {getSortIcon()}
               </div>
@@ -109,11 +118,11 @@ export function DataTable() {
         },
         cell: ({ getValue }) => {
           const value = getValue();
-          return (
-            <div className="w-[180px] truncate" title={formatValue(value)}>
-              {formatValue(value)}
-            </div>
-          );
+          // Truncate display for performance while keeping full data intact
+          if (typeof value === 'string' && value.length > 100) {
+            return value.substring(0, 97) + '...';
+          }
+          return value;
         },
         meta: {
           type: getColumnType(tableData[0]?.[key])
@@ -125,6 +134,8 @@ export function DataTable() {
   const table = useReactTable({
     data: tableData || [],
     columns,
+    columnResizeMode,
+    columnResizeDirection,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -134,6 +145,10 @@ export function DataTable() {
     onColumnVisibilityChange: setColumnVisibility,
     onGlobalFilterChange: setGlobalFilter,
     globalFilterFn: 'includesString',
+    enableColumnResizing: true,
+    debugTable: true,
+    debugHeaders: true,
+    debugColumns: true,
     state: {
       sorting,
       columnFilters,
@@ -141,6 +156,18 @@ export function DataTable() {
       globalFilter,
     },
   });
+
+  // Memoize column sizes to avoid expensive getSize() calls on every render
+  const columnSizeVars = useMemo(() => {
+    const headers = table.getFlatHeaders();
+    const colSizes: { [key: string]: number } = {};
+    for (let i = 0; i < headers.length; i++) {
+      const header = headers[i]!;
+      colSizes[`--header-${header.id}-size`] = header.getSize();
+      colSizes[`--col-${header.column.id}-size`] = header.column.getSize();
+    }
+    return colSizes;
+  }, [table.getState().columnSizingInfo, table.getState().columnSizing]);
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -175,6 +202,15 @@ export function DataTable() {
   return (
     <div className="flex-1 flex flex-col p-4 w-full">
       <div className="mb-4">
+        <pre style={{ minHeight: '10rem' }}>
+        {JSON.stringify(
+          {
+            columnSizing: table.getState().columnSizing,
+          },
+          null,
+          2
+        )}
+      </pre>
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold">{selectedCollection}</h2>
@@ -208,47 +244,63 @@ export function DataTable() {
               </div>
             </div>
           ) : (
-            <div className="w-full overflow-x-scroll flex-1 border rounded-md">
+            <div className={`w-full overflow-x-scroll flex-1 border rounded-md ${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`}>
               <div className="max-h-[calc(100vh-300px)]">
-                <Table className="">
+                <Table className={`${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`} style={{
+                    ...columnSizeVars,
+                    width: table.getCenterTotalSize(),
+                    tableLayout: 'fixed',
+                  }}>
                 <TableHeader>
                   {table.getHeaderGroups().map((headerGroup) => (
                     <TableRow key={headerGroup.id}>
                       {headerGroup.headers.map((header) => (
-                        <TableHead key={header.id} className="w-[180px] bg-tint-300">
+                        <TableHead
+                          {...{
+                            key: header.id,
+                            colSpan: header.colSpan,
+                            className: "relative select-none",
+                            style: {
+                              width: `calc(var(--header-${header.id}-size) * 1px)`,
+                            },
+                          }}
+                        >
                           {header.isPlaceholder
                             ? null
                             : flexRender(
                                 header.column.columnDef.header,
                                 header.getContext()
                               )}
+                            <div
+                              {...{
+                                onDoubleClick: () => header.column.resetSize(),
+                                onMouseDown: header.getResizeHandler(),
+                                onTouchStart: header.getResizeHandler(),
+                                className: `absolute top-0 h-full w-[5px] bg-black/50 cursor-col-resize select-none touch-none bg-gray-200 right-0 ${
+                                  header.column.getIsResizing() ? '!bg-blue-500 !opacity-100' : ''
+                                }`,
+                                style: {
+                                  transform:
+                                    columnResizeMode === 'onEnd' &&
+                                    header.column.getIsResizing()
+                                      ? `translateX(${(table.getState().columnSizingInfo
+                                        .deltaOffset ?? 0)
+                                      }px)`
+                                      : '',
+                                },
+                              }}
+                            />
                         </TableHead>
                       ))}
                     </TableRow>
                   ))}
                 </TableHeader>
-                <TableBody>
-                  {table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row) => (
-                      <TableRow
-                        key={row.id}
-                        data-state={row.getIsSelected() && "selected"}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} className="w-[180px]">
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={columns.length} className="h-24 text-center">
-                        No documents found.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
+                {/* Render memoized table body when resizing for better performance */}
+                {table.getState().columnSizingInfo.isResizingColumn ? (
+                  <MemoizedTableBody table={table} columns={columns} />
+                ) : (
+                  <DataTableBody table={table} columns={columns} />
+                )}
                 </Table>
               </div>
             </div>
@@ -301,3 +353,47 @@ export function DataTable() {
     </div>
   );
 }
+
+// Separate table body component for better memoization
+function DataTableBody({ table, columns }: { table: TanStackTable<any>, columns: any[] }) {
+  return (
+    <TableBody>
+      {(
+        table.getRowModel().rows.map((row) => (
+          <TableRow
+            key={row.id}
+            data-state={row.getIsSelected() && "selected"}
+          >
+            {row.getVisibleCells().map((cell) => {
+              const cellValue = flexRender(cell.column.columnDef.cell, cell.getContext());
+              const originalValue = cell.getValue();
+              
+              // Only create tooltip if the content might be truncated
+              const shouldShowTooltip = typeof originalValue === 'string' && originalValue.length > 100;
+              const tooltipContent = shouldShowTooltip ? originalValue : String(cellValue);
+              
+              return (
+                <TableCell
+                  key={cell.id}
+                  className="truncate"
+                  title={tooltipContent} // Show full content in tooltip
+                  style={{
+                    width: `calc(var(--col-${cell.column.id}-size) * 1px)`,
+                  }}
+                >
+                  {cellValue}
+                </TableCell>
+              );
+            })}
+          </TableRow>
+        ))
+      )}
+    </TableBody>
+  );
+}
+
+// Memoized table body component that only re-renders when data changes
+const MemoizedTableBody = memo(
+  DataTableBody,
+  (prev, next) => prev.table.options.data === next.table.options.data
+);

@@ -2,6 +2,43 @@ import { create } from 'zustand';
 import {mongodb_connect, mongodb_count_documents, mongodb_find_documents} from "@/util.ts";
 // Dynamically import Tauri API only when available
 
+// Format data once when fetched to avoid expensive operations during rendering
+function formatDocumentData(documents: any[]): any[] {
+  return documents.map(doc => {
+    const formattedDoc: any = {};
+    for (const [key, value] of Object.entries(doc)) {
+      formattedDoc[key] = formatValueForDisplay(value);
+    }
+    return formattedDoc;
+  });
+}
+
+function formatValueForDisplay(value: any): any {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  
+  if (typeof value === 'object') {
+    if (value._id) return value._id.toString();
+    if (value instanceof Date) return value.toISOString();
+    
+    // Format MongoDB ObjectId for display
+    if (value && typeof value === 'object' && value.$oid && typeof value.$oid === 'string') {
+      return `ObjectId("${value.$oid}")`;
+    }
+    
+    // For other objects, keep full data - handle display limits in UI
+    try {
+      return JSON.stringify(value);
+    } catch (error) {
+      // Handle circular references or other stringify errors
+      return '[Complex Object]';
+    }
+  }
+  
+  return value;
+}
+
 export interface ConnectionConfig {
   connection_url?: string;
   host: string;
@@ -165,7 +202,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       });
       
       set({
-        tableData: documents,
+        tableData: formatDocumentData(documents),
         totalCount: total_count,
         currentPage: 1,
         isLoading: false,
@@ -198,7 +235,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         documentsSort: {}
       });
 
-      set({ tableData: documents, isLoading: false });
+      set({ tableData: formatDocumentData(documents), isLoading: false });
     } catch (error) {
       console.error('Failed to load table data:', error);
       set({ 
@@ -260,7 +297,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       });
       
       set({
-        tableData: documents,
+        tableData: formatDocumentData(documents),
         totalCount: total_count,
         isLoading: false
       });
