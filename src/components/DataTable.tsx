@@ -86,7 +86,7 @@ export function DataTable() {
           return (
             <Button
               variant="ghost"
-              className="h-auto p-0 font-medium hover:bg-transparent w-full cursor-pointer select-none"
+              className="h-auto p-2 font-medium hover:bg-transparent w-full cursor-pointer select-none"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
               <div className="flex items-center justify-between w-full select-none">
@@ -180,8 +180,8 @@ export function DataTable() {
   // }
 
   return (
-    <div className="flex-1 flex flex-col p-4 w-full">
-      <div className="mb-4">
+    <div className="flex flex-col p-4 w-full h-full relative">
+      <div className="mb-4 flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold">{selectedCollection}</h2>
@@ -208,79 +208,76 @@ export function DataTable() {
       </div>
 
       {isLoading ? (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="absolute flex-1 flex items-center justify-center top-1/2 left-1/2">
               <div className="text-center">
                 <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin" />
                 <p className="text-muted-foreground">Loading collection data...</p>
               </div>
             </div>
-          ) : (
-            <div className={`w-full overflow-x-scroll flex-1 border rounded-md ${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`}>
-              <div className="max-h-[calc(100vh-300px)] overflow-y-auto">
-                <Table className={`${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`} style={{
-                    ...columnSizeVars,
-                    width: table.getCenterTotalSize(),
-                    tableLayout: 'fixed',
-                  }}>
-                <TableHeader className="sticky top-0 z-10 bg-tint-300 border-b border-border shadow-sm">
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <TableHead
+          ) : null }
+        <div className={`w-full border rounded-md overflow-hidden ${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`}>
+          <div className="max-h-[calc(100vh-350px)] overflow-auto">
+            <Table className={`${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`} style={{
+                ...columnSizeVars,
+                width: table.getCenterTotalSize(),
+                tableLayout: 'fixed',
+              }}>
+            <TableHeader className="sticky top-0 z-10 bg-tint-300 border-b border-border shadow-sm">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      {...{
+                        key: header.id,
+                        colSpan: header.colSpan,
+                        className: "relative select-none bg-tint-300",
+                        style: {
+                          width: `calc(var(--header-${header.id}-size) * 1px)`,
+                        },
+                      }}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                        <div
                           {...{
-                            key: header.id,
-                            colSpan: header.colSpan,
-                            className: "relative select-none bg-tint-300",
+                            onDoubleClick: () => header.column.resetSize(),
+                            onMouseDown: header.getResizeHandler(),
+                            onTouchStart: header.getResizeHandler(),
+                            className: `absolute top-0 h-full w-[1px] shadow-lg cursor-col-resize select-none touch-none bg-gray-200/50 right-0 ${
+                              header.column.getIsResizing() ? '!bg-blue-500 !opacity-100' : ''
+                            }`,
                             style: {
-                              width: `calc(var(--header-${header.id}-size) * 1px)`,
+                              transform:
+                                columnResizeMode === 'onEnd' &&
+                                header.column.getIsResizing()
+                                  ? `translateX(${(table.getState().columnSizingInfo
+                                    .deltaOffset ?? 0)
+                                  }px)`
+                                  : '',
                             },
                           }}
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                            <div
-                              {...{
-                                onDoubleClick: () => header.column.resetSize(),
-                                onMouseDown: header.getResizeHandler(),
-                                onTouchStart: header.getResizeHandler(),
-                                className: `absolute top-0 h-full w-[5px] bg-black/50 cursor-col-resize select-none touch-none bg-gray-200 right-0 ${
-                                  header.column.getIsResizing() ? '!bg-blue-500 !opacity-100' : ''
-                                }`,
-                                style: {
-                                  transform:
-                                    columnResizeMode === 'onEnd' &&
-                                    header.column.getIsResizing()
-                                      ? `translateX(${(table.getState().columnSizingInfo
-                                        .deltaOffset ?? 0)
-                                      }px)`
-                                      : '',
-                                },
-                              }}
-                            />
-                        </TableHead>
-                      ))}
-                    </TableRow>
+                        />
+                    </TableHead>
                   ))}
-                </TableHeader>
-                {/* Render memoized table body when resizing for better performance */}
-                {table.getState().columnSizingInfo.isResizingColumn ? (
-                  <MemoizedTableBody table={table} columns={columns} />
-                ) : (
-                  <DataTableBody table={table} columns={columns} />
-                )}
-                </Table>
-              </div>
-            </div>
-          )
-      }
-
+                </TableRow>
+              ))}
+            </TableHeader>
+            {/* Render memoized table body when resizing for better performance */}
+            {table.getState().columnSizingInfo.isResizingColumn ? (
+              <MemoizedTableBody table={table} columns={columns} />
+            ) : (
+              <DataTableBody table={table} columns={columns} />
+            )}
+            </Table>
+          </div>
+        </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between space-x-2 py-4">
+      <div className="flex items-center justify-between space-x-2 py-4 flex-shrink-0">
         <div className="flex items-center space-x-2">
           <p className="text-sm font-medium">
             Page {currentPage} of {totalPages}
