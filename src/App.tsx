@@ -5,7 +5,7 @@ import { DataTable } from "@/components/DataTable";
 function App() {
   return (
     <div className="min-h-screen bg-background w-screen font-sans">
-      <div className="grid grid-cols-[280px_1fr] min-w-0 h-screen">
+      <div className="grid grid-cols-[200px_1fr] min-w-0 h-screen">
         <DatabaseSidebar />
         <div className="min-w-0">
           <header className="border-b border-tint-100 bg-tint-300 flex-shrink-0">

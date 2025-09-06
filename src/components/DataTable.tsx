@@ -167,7 +167,7 @@ export function DataTable() {
 
   if (!selectedCollection) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex items-center justify-center">
         <div className="text-center text-muted-foreground">
           <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p>Select a collection to view its data</p>
@@ -225,18 +225,18 @@ export function DataTable() {
         </div>
       ) : null}
       <div
-        className={`w-full border rounded-md overflow-hidden ${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`}
+        className={`w-full border overflow-hidden ${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`}
       >
         <div className="max-h-[calc(100vh-350px)] overflow-auto">
           <Table
-            className={`${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`}
+            className={`${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''} border-separate border-spacing-0`}
             style={{
               ...columnSizeVars,
               width: table.getCenterTotalSize(),
               tableLayout: 'fixed',
             }}
           >
-            <TableHeader className="sticky top-0 z-10 bg-tint-300 border-b border-border shadow-sm">
+            <TableHeader className="[&_tr]:border-b sticky top-0 z-20 bg-tint-300">
               {table.getHeaderGroups().map(headerGroup => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map(header => (
@@ -244,7 +244,7 @@ export function DataTable() {
                       {...{
                         key: header.id,
                         colSpan: header.colSpan,
-                        className: 'relative select-none bg-tint-300',
+                        className: 'relative select-none bg-tint-300 border-b border-tint-100',
                         style: {
                           width: `calc(var(--header-${header.id}-size) * 1px)`,
                         },
