@@ -16,8 +16,8 @@ export function QueryInput() {
   
   const [localQuery, setLocalQuery] = useState(currentQuery);
 
-  const handleExecuteQuery = () => {
-    executeQuery(localQuery);
+  const handleExecuteQuery = async () => {
+    await executeQuery(localQuery);
   };
 
   const handleClearQuery = () => {
@@ -25,9 +25,9 @@ export function QueryInput() {
     clearQuery();
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = async (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-      handleExecuteQuery();
+      await handleExecuteQuery();
     }
   };
 
@@ -36,8 +36,10 @@ export function QueryInput() {
       <div className="flex items-center gap-2">
         <div className="flex-1 relative">
           <Input
-            placeholder='{ "field": "value" }'
+            style={{ 'fontVariantLigatures': 'none' }}
+            placeholder='{ \"field\": \"value\" }'
             value={localQuery}
+            spellCheck={false}
             onChange={(e) => setLocalQuery(e.target.value)}
             onKeyDown={handleKeyPress}
             className="font-mono text-sm"
