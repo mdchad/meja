@@ -32,6 +32,12 @@ function formatValue(value: any): string {
   if (typeof value === 'object') {
     if (value._id) return value._id.toString();
     if (value instanceof Date) return value.toISOString();
+    
+    // Check if it's a MongoDB ObjectId in { "$oid": "..." } format
+    if (value && typeof value === 'object' && value.$oid && typeof value.$oid === 'string') {
+      return `ObjectId("${value.$oid}")`;
+    }
+    
     return JSON.stringify(value);
   }
   
