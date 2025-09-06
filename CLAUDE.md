@@ -11,6 +11,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `bun run build` - Build frontend for production
 - `bun run tauri:build` - Build complete desktop application
 - `bun run lint` - Run ESLint
+- `bun run format` - Format JS/TS files with Prettier
+- `bun run format:check` - Check if JS/TS files are formatted correctly
 - `bun run preview` - Preview production build
 
 ### Tauri Commands

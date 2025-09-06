@@ -1,0 +1,30 @@
+# Ignore everything by default
+*
+
+# Only format JS/TS files
+!*.js
+!*.jsx
+!*.ts
+!*.tsx
+
+# But ignore certain directories
+node_modules/
+dist/
+build/
+.next/
+.tauri/
+target/
+*.tsbuildinfo
+
+# Ignore other file types that might be mixed in
+*.md
+*.json
+*.css
+*.scss
+*.html
+*.svg
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico

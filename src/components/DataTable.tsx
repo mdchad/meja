@@ -25,7 +25,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { QueryInput } from '@/components/QueryInput';
 import { useAppStore } from '@/lib/store';
-import { ChevronLeft, ChevronRight, Search, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  Loader2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react';
 
 function getColumnType(value: any): string {
   if (value === null || value === undefined) return 'text';
@@ -46,7 +54,7 @@ export function DataTable() {
     selectedCollection,
     isQueryActive,
     loadTableData,
-    setPageSize
+    setPageSize,
   } = useAppStore();
 
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -68,7 +76,7 @@ export function DataTable() {
 
     const columnHelper = createColumnHelper<any>();
 
-    return Array.from(allKeys).map(key => 
+    return Array.from(allKeys).map(key =>
       columnHelper.accessor(key, {
         id: key,
         enableResizing: true,
@@ -105,8 +113,8 @@ export function DataTable() {
           return value;
         },
         meta: {
-          type: getColumnType(tableData[0]?.[key])
-        }
+          type: getColumnType(tableData[0]?.[key]),
+        },
       })
     );
   }, [tableData]);
@@ -186,51 +194,57 @@ export function DataTable() {
           <div>
             <h2 className="text-lg font-semibold">{selectedCollection}</h2>
             <p className="text-sm text-muted-foreground">
-              {totalCount} documents {isQueryActive && <span className="text-green-600">(filtered)</span>}
+              {totalCount} documents{' '}
+              {isQueryActive && <span className="text-green-600">(filtered)</span>}
             </p>
           </div>
         </div>
-        
+
         {/* Query Input */}
         <div className="mb-4">
           <QueryInput />
         </div>
-        
+
         {/* Local Search within results */}
         <div className="flex items-center justify-end mb-2">
           <Input
             placeholder="Search in results..."
             value={globalFilter ?? ''}
-            onChange={(e) => setGlobalFilter(e.target.value)}
+            onChange={e => setGlobalFilter(e.target.value)}
             className="max-w-sm"
           />
         </div>
       </div>
 
       {isLoading ? (
-          <div className="absolute flex-1 flex items-center justify-center top-1/2 left-1/2">
-              <div className="text-center">
-                <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin" />
-                <p className="text-muted-foreground">Loading collection data...</p>
-              </div>
-            </div>
-          ) : null }
-        <div className={`w-full border rounded-md overflow-hidden ${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`}>
-          <div className="max-h-[calc(100vh-350px)] overflow-auto">
-            <Table className={`${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`} style={{
-                ...columnSizeVars,
-                width: table.getCenterTotalSize(),
-                tableLayout: 'fixed',
-              }}>
+        <div className="absolute flex-1 flex items-center justify-center top-1/2 left-1/2">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin" />
+            <p className="text-muted-foreground">Loading collection data...</p>
+          </div>
+        </div>
+      ) : null}
+      <div
+        className={`w-full border rounded-md overflow-hidden ${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`}
+      >
+        <div className="max-h-[calc(100vh-350px)] overflow-auto">
+          <Table
+            className={`${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`}
+            style={{
+              ...columnSizeVars,
+              width: table.getCenterTotalSize(),
+              tableLayout: 'fixed',
+            }}
+          >
             <TableHeader className="sticky top-0 z-10 bg-tint-300 border-b border-border shadow-sm">
-              {table.getHeaderGroups().map((headerGroup) => (
+              {table.getHeaderGroups().map(headerGroup => (
                 <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
+                  {headerGroup.headers.map(header => (
                     <TableHead
                       {...{
                         key: header.id,
                         colSpan: header.colSpan,
-                        className: "relative select-none bg-tint-300",
+                        className: 'relative select-none bg-tint-300',
                         style: {
                           width: `calc(var(--header-${header.id}-size) * 1px)`,
                         },
@@ -238,29 +252,25 @@ export function DataTable() {
                     >
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                        <div
-                          {...{
-                            onDoubleClick: () => header.column.resetSize(),
-                            onMouseDown: header.getResizeHandler(),
-                            onTouchStart: header.getResizeHandler(),
-                            className: `absolute top-0 h-full w-[1px] shadow-lg cursor-col-resize select-none touch-none bg-gray-200/50 right-0 ${
-                              header.column.getIsResizing() ? '!bg-blue-500 !opacity-100' : ''
-                            }`,
-                            style: {
-                              transform:
-                                columnResizeMode === 'onEnd' &&
-                                header.column.getIsResizing()
-                                  ? `translateX(${(table.getState().columnSizingInfo
-                                    .deltaOffset ?? 0)
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                      <div
+                        {...{
+                          onDoubleClick: () => header.column.resetSize(),
+                          onMouseDown: header.getResizeHandler(),
+                          onTouchStart: header.getResizeHandler(),
+                          className: `absolute top-0 h-full w-[1px] shadow-lg cursor-col-resize select-none touch-none bg-gray-200/50 right-0 ${
+                            header.column.getIsResizing() ? '!bg-blue-500 !opacity-100' : ''
+                          }`,
+                          style: {
+                            transform:
+                              columnResizeMode === 'onEnd' && header.column.getIsResizing()
+                                ? `translateX(${
+                                    table.getState().columnSizingInfo.deltaOffset ?? 0
                                   }px)`
-                                  : '',
-                            },
-                          }}
-                        />
+                                : '',
+                          },
+                        }}
+                      />
                     </TableHead>
                   ))}
                 </TableRow>
@@ -272,9 +282,9 @@ export function DataTable() {
             ) : (
               <DataTableBody table={table} columns={columns} />
             )}
-            </Table>
-          </div>
+          </Table>
         </div>
+      </div>
 
       {/* Pagination */}
       <div className="flex items-center justify-between space-x-2 py-4 flex-shrink-0">
@@ -286,7 +296,7 @@ export function DataTable() {
             <p className="text-sm text-muted-foreground">Rows per page</p>
             <select
               value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
+              onChange={e => setPageSize(Number(e.target.value))}
               className="h-8 w-16 rounded border border-input bg-background px-2 text-sm"
             >
               <option value={25}>25</option>
@@ -323,39 +333,35 @@ export function DataTable() {
 }
 
 // Separate table body component for better memoization
-function DataTableBody({ table, columns }: { table: TanStackTable<any>, columns: any[] }) {
+function DataTableBody({ table }: { table: TanStackTable<any>; columns: any[] }) {
   return (
     <TableBody>
-      {(
-        table.getRowModel().rows.map((row) => (
-          <TableRow
-            key={row.id}
-            data-state={row.getIsSelected() && "selected"}
-          >
-            {row.getVisibleCells().map((cell) => {
-              const cellValue = flexRender(cell.column.columnDef.cell, cell.getContext());
-              const originalValue = cell.getValue();
-              
-              // Only create tooltip if the content might be truncated
-              const shouldShowTooltip = typeof originalValue === 'string' && originalValue.length > 100;
-              const tooltipContent = shouldShowTooltip ? originalValue : String(cellValue);
-              
-              return (
-                <TableCell
-                  key={cell.id}
-                  className="truncate"
-                  title={tooltipContent} // Show full content in tooltip
-                  style={{
-                    width: `calc(var(--col-${cell.column.id}-size) * 1px)`,
-                  }}
-                >
-                  {cellValue}
-                </TableCell>
-              );
-            })}
-          </TableRow>
-        ))
-      )}
+      {table.getRowModel().rows.map(row => (
+        <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+          {row.getVisibleCells().map(cell => {
+            const cellValue = flexRender(cell.column.columnDef.cell, cell.getContext());
+            const originalValue = cell.getValue();
+
+            // Only create tooltip if the content might be truncated
+            const shouldShowTooltip =
+              typeof originalValue === 'string' && originalValue.length > 100;
+            const tooltipContent = shouldShowTooltip ? originalValue : String(cellValue);
+
+            return (
+              <TableCell
+                key={cell.id}
+                className="truncate"
+                title={tooltipContent} // Show full content in tooltip
+                style={{
+                  width: `calc(var(--col-${cell.column.id}-size) * 1px)`,
+                }}
+              >
+                {cellValue}
+              </TableCell>
+            );
+          })}
+        </TableRow>
+      ))}
     </TableBody>
   );
 }
