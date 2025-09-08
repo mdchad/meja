@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAppStore } from '@/lib/store';
-import { Search, X, AlertCircle } from 'lucide-react';
+import { Search, X, AlertCircle, RotateCcw } from 'lucide-react';
 
 export function QueryInput() {
   const { 
@@ -11,7 +11,9 @@ export function QueryInput() {
     isQueryActive, 
     isLoading,
     executeQuery, 
-    clearQuery 
+    clearQuery,
+    loadTableData,
+    currentPage
   } = useAppStore();
   
   const [localQuery, setLocalQuery] = useState(currentQuery);
@@ -23,6 +25,10 @@ export function QueryInput() {
   const handleClearQuery = () => {
     setLocalQuery('');
     clearQuery();
+  };
+
+  const handleRefresh = async () => {
+    await loadTableData(currentPage);
   };
 
   const handleKeyPress = async (e: React.KeyboardEvent) => {
@@ -59,6 +65,16 @@ export function QueryInput() {
         >
           <Search className="h-4 w-4" />
           Query
+        </Button>
+
+        <Button 
+          onClick={handleRefresh}
+          disabled={isLoading}
+          size="sm"
+          variant="outline"
+          title="Refresh collection data"
+        >
+          <RotateCcw className="h-4 w-4" />
         </Button>
         
         {isQueryActive && (
