@@ -167,7 +167,7 @@ export function DataTable() {
 
   if (!selectedCollection) {
     return (
-      <div className="flex items-center justify-center">
+      <div className="min-h-[calc(100vh-50vh)] flex items-end justify-center">
         <div className="text-center text-muted-foreground">
           <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p>Select a collection to view its data</p>
