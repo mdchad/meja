@@ -86,9 +86,9 @@ export function DataTable() {
         header: ({ column }) => {
           const getSortIcon = () => {
             const isSorted = column.getIsSorted();
-            if (isSorted === 'asc') return <ArrowUp className="h-4 w-4 stroke-blue-500" />;
-            if (isSorted === 'desc') return <ArrowDown className="h-4 w-4 stroke-blue-500" />;
-            return <ArrowUpDown className="h-4 w-4" />;
+            if (isSorted === 'asc') return <ArrowUp className="size-3.5 stroke-blue-500" />;
+            if (isSorted === 'desc') return <ArrowDown className="size-3.5 stroke-blue-500" />;
+            return <ArrowUpDown className="size-3.5" />;
           };
 
           return (

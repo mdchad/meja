@@ -19,7 +19,8 @@ function App() {
               <div data-tauri-drag-region className="flex flex-1 w-full items-center px-6">
                 {isConnected && (
                   <h2 className="text-base font-semibold">
-                    <span className="text-zinc-600/50">{selectedDatabase}</span> / <span>{selectedCollection}</span>
+                    <span className="text-zinc-600/50">{selectedDatabase} / </span>
+                    <span>{selectedCollection}</span>
                   </h2>
                 )}
               </div>
