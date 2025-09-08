@@ -18,6 +18,8 @@ export function ConnectionManager() {
     isConnected,
     isConnecting,
     connectionError,
+    selectedCollection,
+    selectedDatabase,
     connectionConfig,
     connect,
     disconnect
@@ -54,7 +56,7 @@ export function ConnectionManager() {
     <div className="flex items-center gap-4">
       <div className="flex items-center gap-2">
         <Database className="h-4 w-4" />
-        <span className="text-sm font-medium">MongoDB</span>
+        {/*<span className="text-sm font-medium">MongoDB</span>*/}
         {isConnected ? (
           <Badge variant="default" className="bg-green-500">
             Connected

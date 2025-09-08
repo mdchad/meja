@@ -190,15 +190,15 @@ export function DataTable() {
   return (
     <div className="flex flex-col p-4 w-full h-full relative">
       <div className="mb-4 flex-shrink-0">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-lg font-semibold">{selectedCollection}</h2>
-            <p className="text-sm text-muted-foreground">
-              {totalCount} documents{' '}
-              {isQueryActive && <span className="text-green-600">(filtered)</span>}
-            </p>
-          </div>
-        </div>
+        {/*<div className="flex items-center justify-between mb-4">*/}
+        {/*  <div>*/}
+        {/*    <h2 className="text-lg font-semibold">{selectedCollection}</h2>*/}
+        {/*    <p className="text-sm text-muted-foreground">*/}
+        {/*      {totalCount} documents{' '}*/}
+        {/*      {isQueryActive && <span className="text-green-600">(filtered)</span>}*/}
+        {/*    </p>*/}
+        {/*  </div>*/}
+        {/*</div>*/}
 
         {/* Query Input */}
         <div className="mb-4">
@@ -227,7 +227,7 @@ export function DataTable() {
       <div
         className={`w-full border overflow-hidden ${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`}
       >
-        <div className="max-h-[calc(100vh-350px)] overflow-auto">
+        <div className="max-h-[calc(100vh-275px)] overflow-auto">
           <Table
             className={`${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''} border-separate border-spacing-0`}
             style={{
