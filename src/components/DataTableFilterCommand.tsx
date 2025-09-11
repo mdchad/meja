@@ -182,7 +182,28 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
 
   useEffect(() => {
     if (open) {
-      inputRef?.current?.focus();
+      // Multiple attempts to ensure focus works
+      const focusInput = () => {
+        const input = inputRef?.current;
+        if (input) {
+          input.focus();
+          input.select();
+        } else {
+          // Fallback: try to find the actual input element
+          const commandInput = document.querySelector('[data-slot="command-input"]') as HTMLInputElement;
+          if (commandInput) {
+            commandInput.focus();
+            commandInput.select();
+          }
+        }
+      };
+      
+      // Try immediately
+      focusInput();
+      
+      // Try after a small delay to ensure DOM is ready
+      setTimeout(focusInput, 10);
+      setTimeout(focusInput, 50);
     }
   }, [open]);
 
@@ -214,7 +235,18 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
           "cursor-pointer group flex w-full items-center rounded-lg border border-input bg-background px-3 text-muted-foreground ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:bg-accent/50 hover:text-accent-foreground",
           open ? "hidden" : "visible",
         )}
-        onClick={() => setOpen(true)}
+        onClick={(e) => {
+          e.preventDefault();
+          setOpen(true);
+          // Focus input after state update
+          setTimeout(() => {
+            const input = document.querySelector('[data-slot="command-input"]') as HTMLInputElement;
+            if (input) {
+              input.focus();
+              input.click(); // Ensure caret appears
+            }
+          }, 0);
+        }}
       >
         {isLoading ? (
           <LoaderCircle className="mr-2 h-4 w-4 shrink-0 animate-spin text-muted-foreground opacity-50 group-hover:text-popover-foreground" />
