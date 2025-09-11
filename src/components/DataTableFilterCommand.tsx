@@ -552,8 +552,9 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
             />
           </div>
           <button
+            type="button"
             onClick={handleFilterSubmit}
-            className="flex-shrink-0 p-2 hover:bg-accent rounded-md mr-2 text-muted-foreground hover:text-foreground"
+            className="flex-shrink-0 p-2 hover:bg-accent rounded-md mr-2 text-muted-foreground hover:text-foreground cursor-pointer"
             title="Execute filter (Cmd+Enter)"
             disabled={!inputValue.trim()}
           >
@@ -775,7 +776,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                     <Kbd variant="outline">Enter</Kbd> to select
                   </span>
                   <span>
-                    <Kbd variant="outline">⌘ Enter</Kbd> to execute
+                    <Kbd variant="outline">⌘ + Enter</Kbd> to execute
                   </span>
                   <span>
                     <Kbd variant="outline">Esc</Kbd> to close
