@@ -4,6 +4,8 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   getFilteredRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
   flexRender,
   createColumnHelper,
   SortingState,
@@ -24,6 +26,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { QueryInput } from '@/components/QueryInput';
+import { DataTableFilterCommand } from '@/components/DataTableFilterCommand';
 import { useAppStore } from '@/lib/store';
 import {
   ChevronLeft,
@@ -127,6 +130,8 @@ export function DataTable() {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
     // getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -134,6 +139,7 @@ export function DataTable() {
     onGlobalFilterChange: setGlobalFilter,
     globalFilterFn: 'includesString',
     enableColumnResizing: true,
+    enableColumnFilters: true,
     debugTable: true,
     debugHeaders: true,
     debugColumns: true,
@@ -201,19 +207,24 @@ export function DataTable() {
         {/*</div>*/}
 
         {/* Query Input */}
+        {/*<div className="mb-4">*/}
+        {/*  <QueryInput />*/}
+        {/*</div>*/}
+
+        {/* Advanced Filter Command */}
         <div className="mb-4">
-          <QueryInput />
+          <DataTableFilterCommand table={table} />
         </div>
 
         {/* Local Search within results */}
-        <div className="flex items-center justify-end mb-2">
-          <Input
-            placeholder="Search in results..."
-            value={globalFilter ?? ''}
-            onChange={e => setGlobalFilter(e.target.value)}
-            className="max-w-sm"
-          />
-        </div>
+        {/*<div className="flex items-center justify-end mb-2">*/}
+        {/*  <Input*/}
+        {/*    placeholder="Search in results..."*/}
+        {/*    value={globalFilter ?? ''}*/}
+        {/*    onChange={e => setGlobalFilter(e.target.value)}*/}
+        {/*    className="max-w-sm"*/}
+        {/*  />*/}
+        {/*</div>*/}
       </div>
 
       {isLoading ? (
@@ -350,8 +361,8 @@ function DataTableBody({ table }: { table: TanStackTable<any>; columns: any[] })
             return (
               <TableCell
                 key={cell.id}
-                className="truncate"
-                title={tooltipContent} // Show full content in tooltip
+                className="truncate border-r border-gray-100"
+                // title={tooltipContent} // Show full content in tooltip
                 style={{
                   width: `calc(var(--col-${cell.column.id}-size) * 1px)`,
                 }}

@@ -88,6 +88,7 @@ export interface AppState {
   loadTableData: (page?: number) => Promise<void>;
   setPageSize: (size: number) => void;
   executeQuery: (query: string) => Promise<void>;
+  executeFilterQuery: (filterObject: Record<string, unknown>) => Promise<void>;
   clearQuery: () => void;
 }
 
@@ -306,6 +307,55 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ 
         isLoading: false,
         queryError: typeof error === 'string' ? error : 'Query execution failed'
+      });
+    }
+  },
+
+  // Execute a filter query (from filter command)
+  executeFilterQuery: async (filterObject: Record<string, unknown>) => {
+    const { selectedDatabase, selectedCollection, pageSize } = get();
+    if (!selectedDatabase || !selectedCollection) return;
+
+    // Clear previous query error and set filter as current query
+    const queryString = Object.keys(filterObject).length > 0 ? JSON.stringify(filterObject, null, 2) : '';
+    set({ 
+      queryError: null, 
+      currentQuery: queryString, 
+      isQueryActive: Object.keys(filterObject).length > 0,
+      queryFilter: filterObject,
+      currentPage: 1,
+      isLoading: true 
+    });
+    
+    try {
+      // Get documents with the filter
+      const documents = await mongodb_find_documents({
+        databaseName: selectedDatabase,
+        collectionName: selectedCollection,
+        page: 0,
+        perPage: pageSize,
+        documentsFilter: filterObject,
+        documentsProjection: {},
+        documentsSort: {}
+      });
+      
+      // Get total count with the filter
+      const total_count = await mongodb_count_documents({
+        databaseName: selectedDatabase,
+        collectionName: selectedCollection,
+        documentsFilter: filterObject
+      });
+      
+      set({
+        tableData: formatDocumentData(documents),
+        totalCount: total_count,
+        isLoading: false
+      });
+    } catch (error) {
+      console.error('Failed to execute filter query:', error);
+      set({ 
+        isLoading: false,
+        queryError: typeof error === 'string' ? error : 'Filter query execution failed'
       });
     }
   },
