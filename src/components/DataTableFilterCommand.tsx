@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { useHotKey } from "@/hooks/use-hot-key";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { cn } from "@/lib/utils";
-import { LoaderCircle, Search, X } from "lucide-react";
+import { LoaderCircle, Search, X, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Table as TanStackTable } from "@tanstack/react-table";
 import { useAppStore } from "@/lib/store";
@@ -25,6 +25,62 @@ type FilterField = {
   value: string;
   label: string;
   type: 'text' | 'number' | 'date' | 'boolean';
+};
+
+type MongoOperator = {
+  operator: string;
+  description: string;
+  example: string;
+  requiresValue: boolean;
+};
+
+const getMongoOperators = (fieldType: string): MongoOperator[] => {
+  const baseOperators: MongoOperator[] = [
+    { operator: '$eq', description: 'Equal to', example: 'value', requiresValue: true },
+    { operator: '$ne', description: 'Not equal to', example: 'value', requiresValue: true },
+    { operator: '$exists', description: 'Field exists', example: 'true', requiresValue: true },
+    { operator: '$in', description: 'In array', example: '[val1,val2]', requiresValue: true },
+    { operator: '$nin', description: 'Not in array', example: '[val1,val2]', requiresValue: true },
+  ];
+
+  switch (fieldType) {
+    case 'text':
+      return [
+        ...baseOperators,
+        { operator: '$regex', description: 'Regular expression', example: 'pattern', requiresValue: true },
+        { operator: '$text', description: 'Text search', example: 'search terms', requiresValue: true },
+        { operator: '$size', description: 'Array size', example: '5', requiresValue: true },
+      ];
+    
+    case 'number':
+      return [
+        ...baseOperators,
+        { operator: '$gt', description: 'Greater than', example: '100', requiresValue: true },
+        { operator: '$gte', description: 'Greater than or equal', example: '100', requiresValue: true },
+        { operator: '$lt', description: 'Less than', example: '100', requiresValue: true },
+        { operator: '$lte', description: 'Less than or equal', example: '100', requiresValue: true },
+        { operator: '$mod', description: 'Modulo', example: '[5,0]', requiresValue: true },
+      ];
+    
+    case 'date':
+      return [
+        ...baseOperators,
+        { operator: '$gt', description: 'After date', example: '2024-01-01', requiresValue: true },
+        { operator: '$gte', description: 'On or after date', example: '2024-01-01', requiresValue: true },
+        { operator: '$lt', description: 'Before date', example: '2024-01-01', requiresValue: true },
+        { operator: '$lte', description: 'On or before date', example: '2024-01-01', requiresValue: true },
+      ];
+    
+    case 'boolean':
+      return [
+        { operator: '$eq', description: 'Equal to', example: 'true', requiresValue: true },
+        { operator: '$ne', description: 'Not equal to', example: 'false', requiresValue: true },
+        { operator: '$exists', description: 'Field exists', example: 'true', requiresValue: true },
+      ];
+    
+    default:
+      return baseOperators;
+  }
 };
 
 // Utility functions
@@ -113,63 +169,146 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
     const parts = input.trim().split(' ').filter(part => part.includes(':'));
     
     parts.forEach(part => {
-      const [field, value] = part.split(':');
-      if (field && value) {
-        const fieldConfig = filterFields.find(f => f.value === field);
-        if (fieldConfig) {
-          switch (fieldConfig.type) {
-            case 'number':
-              const numValue = parseFloat(value);
-              if (!isNaN(numValue)) filters[field] = numValue;
-              break;
-            case 'boolean':
-              filters[field] = value.toLowerCase() === 'true';
-              break;
-            case 'date':
-              // Handle date as regex for flexible matching
-              filters[field] = { $regex: value, $options: 'i' };
-              break;
-            default:
-              // For text fields, use regex for partial matching
-              if (value.includes('*') || value.includes('?')) {
-                // Convert wildcards to regex
-                const regexValue = value.replace(/\*/g, '.*').replace(/\?/g, '.');
-                filters[field] = { $regex: regexValue, $options: 'i' };
-              } else {
-                // Partial text search
-                filters[field] = { $regex: value, $options: 'i' };
+      // Split more carefully to handle operator syntax: field:$operator:value
+      const colonIndex = part.indexOf(':');
+      if (colonIndex === -1) return;
+      
+      const field = part.substring(0, colonIndex);
+      const remainder = part.substring(colonIndex + 1);
+      
+      if (!field || !remainder) return;
+      
+      const fieldConfig = filterFields.find(f => f.value === field);
+      if (!fieldConfig) return;
+      
+      // Check if remainder starts with MongoDB operator
+      if (remainder.startsWith('$')) {
+        // Handle MongoDB operator syntax: $operator:value
+        const nextColonIndex = remainder.indexOf(':', 1);
+        if (nextColonIndex === -1) return; // No value after operator
+        
+        const operator = remainder.substring(0, nextColonIndex); // e.g., '$eq'
+        const operatorValue = remainder.substring(nextColonIndex + 1); // remaining value
+        
+        if (!operatorValue) return;
+        
+        let parsedValue: any = operatorValue;
+        
+        // Parse value based on field type and operator
+        if (fieldConfig.type === 'number' && !['$in', '$nin', '$mod'].includes(operator)) {
+          parsedValue = parseFloat(operatorValue);
+          if (isNaN(parsedValue)) return;
+        } else if (fieldConfig.type === 'boolean' && ['$eq', '$ne'].includes(operator)) {
+          parsedValue = operatorValue.toLowerCase() === 'true';
+        } else if (operator === '$in' || operator === '$nin') {
+          // Handle arrays: [val1,val2,val3]
+          if (operatorValue.startsWith('[') && operatorValue.endsWith(']')) {
+            const arrayStr = operatorValue.slice(1, -1);
+            parsedValue = arrayStr.split(',').map(v => {
+              const trimmed = v.trim();
+              // Try to parse as number if field is number type
+              if (fieldConfig.type === 'number') {
+                const num = parseFloat(trimmed);
+                return isNaN(num) ? trimmed : num;
               }
+              return trimmed;
+            });
+          } else {
+            // If not array format, treat as single value array
+            parsedValue = [operatorValue];
           }
+        } else if (operator === '$exists') {
+          parsedValue = operatorValue.toLowerCase() === 'true';
+        } else if (operator === '$mod') {
+          // Handle modulo: [divisor,remainder]
+          if (operatorValue.startsWith('[') && operatorValue.endsWith(']')) {
+            const arrayStr = operatorValue.slice(1, -1);
+            parsedValue = arrayStr.split(',').map(v => parseInt(v.trim()));
+          }
+        } else if (operator === '$regex') {
+          // Handle regex with options
+          parsedValue = operatorValue;
         }
+        
+        filters[field] = { [operator]: parsedValue };
+        
+        // Add debug logging
+        console.log(`Parsed operator query:`, { field, operator, operatorValue, parsedValue, result: filters[field] });
+        
+      } else {
+        // Default behavior for simple values
+        switch (fieldConfig.type) {
+          case 'number':
+            const numValue = parseFloat(remainder);
+            if (!isNaN(numValue)) filters[field] = numValue;
+            break;
+          case 'boolean':
+            filters[field] = remainder.toLowerCase() === 'true';
+            break;
+          case 'date':
+            filters[field] = { $regex: remainder, $options: 'i' };
+            break;
+          default:
+            // For text fields, use regex for partial matching
+            if (remainder.includes('*') || remainder.includes('?')) {
+              const regexValue = remainder.replace(/\*/g, '.*').replace(/\?/g, '.');
+              filters[field] = { $regex: regexValue, $options: 'i' };
+            } else {
+              filters[field] = { $regex: remainder, $options: 'i' };
+            }
+        }
+        
+        console.log(`Parsed simple query:`, { field, remainder, result: filters[field] });
       }
     });
     
+    console.log(`Final parsed filters:`, filters);
     return filters;
   }
 
   function serializeFilters(filterObject: Record<string, unknown>): string {
     const parts: string[] = [];
     Object.entries(filterObject).forEach(([key, value]) => {
-      if (typeof value === 'object' && value !== null && '$regex' in value) {
-        // Handle regex values
-        parts.push(`${key}:${(value as any).$regex}`);
+      if (typeof value === 'object' && value !== null) {
+        // Handle MongoDB operator objects
+        const operatorEntries = Object.entries(value as Record<string, unknown>);
+        operatorEntries.forEach(([operator, operatorValue]) => {
+          if (operator.startsWith('$')) {
+            // Format: field:$operator:value
+            if (Array.isArray(operatorValue)) {
+              // Handle arrays: field:$in:[val1,val2,val3]
+              parts.push(`${key}:${operator}:[${operatorValue.join(',')}]`);
+            } else {
+              // Handle simple values: field:$eq:100
+              parts.push(`${key}:${operator}:${operatorValue}`);
+            }
+          }
+        });
       } else {
+        // Handle simple values: field:value
         parts.push(`${key}:${value}`);
       }
     });
     return parts.join(' ');
   }
 
-  // Execute MongoDB query when input changes
-  useEffect(() => {
-    if (currentWord !== "" && open) return;
-    if (currentWord !== "" && !open) setCurrentWord("");
-    
+  // Function to execute the filter
+  const handleFilterSubmit = () => {
     const filters = parseFilterInput(inputValue);
-    
-    // Execute the filter query through the store
     executeFilterQuery(filters);
-  }, [inputValue, open, currentWord, executeFilterQuery]);
+    setOpen(false);
+  };
+
+  // Don't auto-execute on every input change - wait for explicit submit
+  // useEffect(() => {
+  //   if (currentWord !== "" && open) return;
+  //   if (currentWord !== "" && !open) setCurrentWord("");
+  //   
+  //   const filters = parseFilterInput(inputValue);
+  //   
+  //   // Execute the filter query through the store
+  //   executeFilterQuery(filters);
+  // }, [inputValue, open, currentWord, executeFilterQuery]);
 
   // Update input when query filter changes externally
   useEffect(() => {
@@ -292,37 +431,54 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
           getFilterValue({ value, search, keywords: keywords || [], currentWord })
         }
       >
-        <CommandInput
-          ref={inputRef}
-          value={inputValue}
-          onValueChange={setInputValue}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") inputRef?.current?.blur();
-          }}
-          onBlur={() => {
-            setOpen(false);
-            const search = inputValue.trim();
-            if (!search) return;
-            const timestamp = Date.now();
-            const searchIndex = lastSearches.findIndex(
-              (item) => item.search === search,
-            );
-            if (searchIndex !== -1) {
-              lastSearches[searchIndex].timestamp = timestamp;
-              setLastSearches(lastSearches);
-              return;
-            }
-            setLastSearches([...lastSearches, { search, timestamp }]);
-          }}
-          onInput={(e) => {
-            const caretPosition = e.currentTarget?.selectionStart || -1;
-            const value = e.currentTarget?.value || "";
-            const word = getWordByCaretPosition({ value, caretPosition });
-            setCurrentWord(word);
-          }}
-          placeholder="Filter data table..."
-          className="text-foreground"
-        />
+        <div className="flex items-center border-b">
+          <div className="flex-1">
+            <CommandInput
+              ref={inputRef}
+              value={inputValue}
+              onValueChange={setInputValue}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  inputRef?.current?.blur();
+                } else if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  handleFilterSubmit();
+                }
+              }}
+              onBlur={() => {
+                setOpen(false);
+                const search = inputValue.trim();
+                if (!search) return;
+                const timestamp = Date.now();
+                const searchIndex = lastSearches.findIndex(
+                  (item) => item.search === search,
+                );
+                if (searchIndex !== -1) {
+                  lastSearches[searchIndex].timestamp = timestamp;
+                  setLastSearches(lastSearches);
+                  return;
+                }
+                setLastSearches([...lastSearches, { search, timestamp }]);
+              }}
+              onInput={(e) => {
+                const caretPosition = e.currentTarget?.selectionStart || -1;
+                const value = e.currentTarget?.value || "";
+                const word = getWordByCaretPosition({ value, caretPosition });
+                setCurrentWord(word);
+              }}
+              placeholder="Filter data table..."
+              className="text-foreground border-none w-full"
+            />
+          </div>
+          <button
+            onClick={handleFilterSubmit}
+            className="flex-shrink-0 p-2 hover:bg-accent rounded-md mr-2 text-muted-foreground hover:text-foreground"
+            title="Execute filter (Cmd+Enter)"
+            disabled={!inputValue.trim()}
+          >
+            <Play className="h-4 w-4" />
+          </button>
+        </div>
         <div className="relative">
           <div className="absolute top-2 z-50 w-full overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md outline-none animate-in">
             <CommandList className="max-h-[310px]">
@@ -363,9 +519,53 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                 })}
               </CommandGroup>
               <CommandSeparator />
-              <CommandGroup heading="Values">
+              <CommandGroup heading="Operators">
                 {filterFields.map((field) => {
                   if (!currentWord.includes(`${field.value}:`)) return null;
+                  
+                  const operators = getMongoOperators(field.type);
+                  
+                  return operators.map((operator) => (
+                    <CommandItem
+                      key={`${field.value}:${operator.operator}`}
+                      value={`${field.value}:${operator.operator}`}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onSelect={() => {
+                        setInputValue((prev) => {
+                          const input = prev.replace(currentWord, `${field.value}:${operator.operator}:`);
+                          return input;
+                        });
+                        setCurrentWord(`${field.value}:${operator.operator}:`);
+                      }}
+                      className="group"
+                    >
+                      <div className="flex flex-col items-start">
+                        <span className="font-mono text-blue-600">{operator.operator}</span>
+                        <span className="text-xs text-muted-foreground">{operator.description}</span>
+                      </div>
+                      <span className="ml-auto text-xs font-mono text-muted-foreground">
+                        {operator.example}
+                      </span>
+                    </CommandItem>
+                  ));
+                })}
+              </CommandGroup>
+              <CommandSeparator />
+              <CommandGroup heading="Values">
+                {filterFields.map((field) => {
+                  // Show values when typing field: or field:$operator:
+                  const isFieldQuery = currentWord.includes(`${field.value}:`);
+                  if (!isFieldQuery) return null;
+
+                  // Check if we're in operator mode
+                  const parts = currentWord.split(':');
+                  const isOperatorMode = parts.length >= 3 && parts[1].startsWith('$');
+                  
+                  // Only show basic values if not in operator mode
+                  if (isOperatorMode) return null;
                   
                   const suggestions = getFieldSuggestions(field);
                   const column = table.getColumn(field.value);
@@ -444,38 +644,53 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
               <CommandEmpty>No results found.</CommandEmpty>
             </CommandList>
             <div
-              className="flex flex-wrap justify-between gap-3 border-t bg-accent/50 px-2 py-1.5 text-sm text-accent-foreground"
+              className="border-t bg-accent/50 px-2 py-1.5 text-xs text-accent-foreground"
               cmdk-footer=""
             >
-              <div className="flex flex-wrap gap-3">
-                <span>
-                  Use <Kbd variant="outline">↑</Kbd>{" "}
-                  <Kbd variant="outline">↓</Kbd> to navigate
-                </span>
-                <span>
-                  <Kbd variant="outline">Enter</Kbd> to select
-                </span>
-                <span>
-                  <Kbd variant="outline">Esc</Kbd> to close
-                </span>
-                <Separator orientation="vertical" className="my-auto h-3" />
-                <span>
-                  Example: <Kbd variant="outline">name:john age:25</Kbd>
-                </span>
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap gap-3">
+                  <span>
+                    Use <Kbd variant="outline">↑</Kbd>{" "}
+                    <Kbd variant="outline">↓</Kbd> to navigate
+                  </span>
+                  <span>
+                    <Kbd variant="outline">Enter</Kbd> to select
+                  </span>
+                  <span>
+                    <Kbd variant="outline">⌘ Enter</Kbd> to execute
+                  </span>
+                  <span>
+                    <Kbd variant="outline">Esc</Kbd> to close
+                  </span>
+                  {lastSearches.length > 0 && (
+                    <>
+                      <Separator orientation="vertical" className="my-auto h-3" />
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-accent-foreground"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                        onClick={() => setLastSearches([])}
+                      >
+                        Clear history
+                      </button>
+                    </>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <span>
+                    Basic: <Kbd variant="outline" className="text-xs">name:john</Kbd>
+                  </span>
+                  <span>
+                    Operator: <Kbd variant="outline" className="text-xs">age:$gte:25</Kbd>
+                  </span>
+                  <span>
+                    Array: <Kbd variant="outline" className="text-xs">status:$in:[active,pending]</Kbd>
+                  </span>
+                </div>
               </div>
-              {lastSearches.length > 0 && (
-                <button
-                  type="button"
-                  className="text-muted-foreground hover:text-accent-foreground"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onClick={() => setLastSearches([])}
-                >
-                  Clear history
-                </button>
-              )}
             </div>
           </div>
         </div>
