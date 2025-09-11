@@ -478,10 +478,10 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
         </span>
         {isQueryActive && inputValue.trim() && (
           <button
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation();
-              clearQuery();
               setInputValue('');
+              await clearQuery();
             }}
             className="mr-2 p-1 rounded hover:bg-accent"
             title="Clear filter"
@@ -762,7 +762,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
               <CommandEmpty>No results found.</CommandEmpty>
             </CommandList>
             <div
-              className="border-t bg-accent/50 px-2 py-1.5 text-xs text-accent-foreground"
+              className="border-t bg-neutral-200/50 px-2 py-1.5 text-xs text-accent-foreground"
               cmdk-footer=""
             >
               <div className="flex flex-col gap-2">

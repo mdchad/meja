@@ -1,10 +1,16 @@
+import { useEffect } from 'react';
 import { ConnectionManager } from '@/components/ConnectionManager';
 import { DatabaseSidebar } from '@/components/DatabaseSidebar';
 import { DataTable } from '@/components/DataTable';
 import { useAppStore } from '@/lib/store.ts';
 
 function App() {
-  const { isConnected, selectedCollection, selectedDatabase } = useAppStore();
+  const { isConnected, selectedCollection, selectedDatabase, initializeConnection } = useAppStore();
+
+  // Initialize connection on app startup
+  useEffect(() => {
+    initializeConnection();
+  }, [initializeConnection]);
 
   return (
     <div className="min-h-screen bg-background w-screen font-sans">
