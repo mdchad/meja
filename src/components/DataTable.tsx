@@ -245,7 +245,7 @@ export function DataTable() {
               <span className="flex items-center gap-1">
                 <Filter className="h-4 w-4 text-green-600" />
                 <span className="font-medium text-foreground">{totalCount.toLocaleString()}</span>
-                <span>filtered results</span>
+                <span>Documents found</span>
                 {totalCount === 0 && <span className="text-orange-600">(no matches)</span>}
               </span>
             ) : (

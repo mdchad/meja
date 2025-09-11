@@ -2,6 +2,8 @@
 
 A modern GUI database client built with Tauri v2, designed to connect to any local or cloud database with a beautiful, intuitive interface.
 
+![Screenshot of the app](/src/assets/readme-screenshot.png)
+
 ## Features
 
 - **Multi-Database Support**: Connect to MongoDB (with more databases coming soon)
