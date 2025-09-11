@@ -211,7 +211,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
       <button
         type="button"
         className={cn(
-          "group flex w-full items-center rounded-lg border border-input bg-background px-3 text-muted-foreground ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:bg-accent/50 hover:text-accent-foreground",
+          "cursor-pointer group flex w-full items-center rounded-lg border border-input bg-background px-3 text-muted-foreground ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:bg-accent/50 hover:text-accent-foreground",
           open ? "hidden" : "visible",
         )}
         onClick={() => setOpen(true)}
@@ -402,9 +402,9 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                             lastSearches.filter(i => i.search !== item.search)
                           );
                         }}
-                        className="ml-1 hidden rounded-md p-0.5 hover:bg-background group-aria-[selected=true]:block"
+                        className="ml-1 cursor-pointer hidden rounded-xs p-0.5 hover:bg-background group-aria-[selected=true]:block"
                       >
-                        <X className="h-4 w-4" />
+                        <X className="size-4" />
                       </button>
                     </CommandItem>
                   ))}

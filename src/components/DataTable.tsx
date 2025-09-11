@@ -207,9 +207,9 @@ export function DataTable() {
         {/*</div>*/}
 
         {/* Query Input */}
-        <div className="mb-4">
-          <QueryInput />
-        </div>
+        {/*<div className="mb-4">*/}
+        {/*  <QueryInput />*/}
+        {/*</div>*/}
 
         {/* Advanced Filter Command */}
         <div className="mb-4">
@@ -217,14 +217,14 @@ export function DataTable() {
         </div>
 
         {/* Local Search within results */}
-        <div className="flex items-center justify-end mb-2">
-          <Input
-            placeholder="Search in results..."
-            value={globalFilter ?? ''}
-            onChange={e => setGlobalFilter(e.target.value)}
-            className="max-w-sm"
-          />
-        </div>
+        {/*<div className="flex items-center justify-end mb-2">*/}
+        {/*  <Input*/}
+        {/*    placeholder="Search in results..."*/}
+        {/*    value={globalFilter ?? ''}*/}
+        {/*    onChange={e => setGlobalFilter(e.target.value)}*/}
+        {/*    className="max-w-sm"*/}
+        {/*  />*/}
+        {/*</div>*/}
       </div>
 
       {isLoading ? (
