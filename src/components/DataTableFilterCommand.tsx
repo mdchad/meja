@@ -15,10 +15,10 @@ import { cn } from "@/lib/utils";
 import { LoaderCircle, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Table as TanStackTable } from "@tanstack/react-table";
+import { useAppStore } from "@/lib/store";
 
 interface DataTableFilterCommandProps {
   table: TanStackTable<any>;
-  isLoading?: boolean;
 }
 
 type FilterField = {
@@ -77,7 +77,8 @@ function formatDistanceToNow(timestamp: number): string {
   return 'just now';
 }
 
-export function DataTableFilterCommand({ table, isLoading = false }: DataTableFilterCommandProps) {
+export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
+  const { executeFilterQuery, clearQuery, isLoading, isQueryActive, queryFilter } = useAppStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState<boolean>(false);
   const [currentWord, setCurrentWord] = useState<string>("");
@@ -107,8 +108,8 @@ export function DataTableFilterCommand({ table, isLoading = false }: DataTableFi
     return 'text';
   }
 
-  function parseFilterInput(input: string) {
-    const filters: { [key: string]: any } = {};
+  function parseFilterInput(input: string): Record<string, unknown> {
+    const filters: Record<string, unknown> = {};
     const parts = input.trim().split(' ').filter(part => part.includes(':'));
     
     parts.forEach(part => {
@@ -124,8 +125,20 @@ export function DataTableFilterCommand({ table, isLoading = false }: DataTableFi
             case 'boolean':
               filters[field] = value.toLowerCase() === 'true';
               break;
+            case 'date':
+              // Handle date as regex for flexible matching
+              filters[field] = { $regex: value, $options: 'i' };
+              break;
             default:
-              filters[field] = value;
+              // For text fields, use regex for partial matching
+              if (value.includes('*') || value.includes('?')) {
+                // Convert wildcards to regex
+                const regexValue = value.replace(/\*/g, '.*').replace(/\?/g, '.');
+                filters[field] = { $regex: regexValue, $options: 'i' };
+              } else {
+                // Partial text search
+                filters[field] = { $regex: value, $options: 'i' };
+              }
           }
         }
       }
@@ -134,38 +147,36 @@ export function DataTableFilterCommand({ table, isLoading = false }: DataTableFi
     return filters;
   }
 
-  function serializeFilters(columnFilters: any[]): string {
-    return columnFilters.map(filter => `${filter.id}:${filter.value}`).join(' ');
+  function serializeFilters(filterObject: Record<string, unknown>): string {
+    const parts: string[] = [];
+    Object.entries(filterObject).forEach(([key, value]) => {
+      if (typeof value === 'object' && value !== null && '$regex' in value) {
+        // Handle regex values
+        parts.push(`${key}:${(value as any).$regex}`);
+      } else {
+        parts.push(`${key}:${value}`);
+      }
+    });
+    return parts.join(' ');
   }
 
-  // Apply filters when input changes
+  // Execute MongoDB query when input changes
   useEffect(() => {
     if (currentWord !== "" && open) return;
     if (currentWord !== "" && !open) setCurrentWord("");
-    if (inputValue.trim() === "" && !open) return;
-
+    
     const filters = parseFilterInput(inputValue);
     
-    // Apply filters to table
-    Object.keys(filters).forEach(key => {
-      table.getColumn(key)?.setFilterValue(filters[key]);
-    });
-    
-    // Reset columns not in filters
-    table.getAllColumns().forEach(col => {
-      if (col.getCanFilter() && !(col.id in filters)) {
-        col.setFilterValue(undefined);
-      }
-    });
-  }, [inputValue, open, currentWord, table]);
+    // Execute the filter query through the store
+    executeFilterQuery(filters);
+  }, [inputValue, open, currentWord, executeFilterQuery]);
 
-  // Update input when column filters change externally
+  // Update input when query filter changes externally
   useEffect(() => {
-    if (!open) {
-      const columnFilters = table.getState().columnFilters;
-      setInputValue(serializeFilters(columnFilters));
+    if (!open && queryFilter) {
+      setInputValue(serializeFilters(queryFilter));
     }
-  }, [table.getState().columnFilters, open]);
+  }, [queryFilter, open]);
 
   useHotKey(() => setOpen((prev) => !prev), "k");
 
@@ -217,6 +228,24 @@ export function DataTableFilterCommand({ table, isLoading = false }: DataTableFi
             <span>Filter data table...</span>
           )}
         </span>
+        {isQueryActive && inputValue.trim() && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              clearQuery();
+              setInputValue('');
+            }}
+            className="mr-2 p-1 rounded hover:bg-accent"
+            title="Clear filter"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        )}
+        {isQueryActive && (
+          <div className="mr-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full" title="Filter active"></div>
+          </div>
+        )}
         <Kbd className="ml-auto text-muted-foreground group-hover:text-accent-foreground">
           <span className="mr-1">⌘</span>
           <span>K</span>
@@ -263,7 +292,7 @@ export function DataTableFilterCommand({ table, isLoading = false }: DataTableFi
           className="text-foreground"
         />
         <div className="relative">
-          <div className="absolute top-2 z-10 w-full overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md outline-none animate-in">
+          <div className="absolute top-2 z-50 w-full overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md outline-none animate-in">
             <CommandList className="max-h-[310px]">
               <CommandGroup heading="Filter">
                 {filterFields.map((field) => {

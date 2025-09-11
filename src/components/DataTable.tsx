@@ -213,7 +213,7 @@ export function DataTable() {
 
         {/* Advanced Filter Command */}
         <div className="mb-4">
-          <DataTableFilterCommand table={table} isLoading={isLoading} />
+          <DataTableFilterCommand table={table} />
         </div>
 
         {/* Local Search within results */}
