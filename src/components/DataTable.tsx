@@ -36,6 +36,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Filter,
 } from 'lucide-react';
 
 function getColumnType(value: any): string {
@@ -235,6 +236,33 @@ export function DataTable() {
           </div>
         </div>
       ) : null}
+
+      {/* Results Counter */}
+      {selectedCollection && !isLoading && (
+        <div className="flex items-center justify-between mb-3 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            {isQueryActive ? (
+              <span className="flex items-center gap-1">
+                <Filter className="h-4 w-4 text-green-600" />
+                <span className="font-medium text-foreground">{totalCount.toLocaleString()}</span>
+                <span>filtered results</span>
+                {totalCount === 0 && <span className="text-orange-600">(no matches)</span>}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1">
+                <span className="font-medium text-foreground">{totalCount.toLocaleString()}</span>
+                <span>documents in {selectedCollection}</span>
+              </span>
+            )}
+          </div>
+          <div className="text-xs">
+            {currentPage > 1 && (
+              <span>Showing page {currentPage} of {Math.ceil(totalCount / pageSize)}</span>
+            )}
+          </div>
+        </div>
+      )}
+      
       <div
         className={`w-full border overflow-hidden ${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`}
       >
@@ -295,13 +323,30 @@ export function DataTable() {
             )}
           </Table>
         </div>
+        
+        {/* Empty Results Indicator */}
+        {!isLoading && tableData && tableData.length === 0 && isQueryActive && (
+          <div className="flex items-center justify-center py-8 text-muted-foreground">
+            <div className="text-center">
+              <Filter className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm font-medium mb-1">No results found</p>
+              <p className="text-xs">
+                Your filter returned no matching documents. The filter is still active.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Pagination */}
       <div className="flex items-center justify-between space-x-2 py-4 flex-shrink-0">
         <div className="flex items-center space-x-2">
           <p className="text-sm font-medium">
-            Page {currentPage} of {totalPages}
+            {totalCount === 0 && isQueryActive ? (
+              "No results found"
+            ) : (
+              `Page ${currentPage} of ${totalPages}`
+            )}
           </p>
           <div className="flex items-center space-x-2">
             <p className="text-sm text-muted-foreground">Rows per page</p>

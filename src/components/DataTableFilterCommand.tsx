@@ -13,7 +13,7 @@ import { useHotKey } from "@/hooks/use-hot-key";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { cn } from "@/lib/utils";
 import { LoaderCircle, Search, X, Play } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Table as TanStackTable } from "@tanstack/react-table";
 import { useAppStore } from "@/lib/store";
 
@@ -46,9 +46,13 @@ const getMongoOperators = (fieldType: string): MongoOperator[] => {
   switch (fieldType) {
     case 'text':
       return [
-        ...baseOperators,
-        { operator: '$regex', description: 'Regular expression', example: 'pattern', requiresValue: true },
-        { operator: '$text', description: 'Text search', example: 'search terms', requiresValue: true },
+        { operator: '$eq', description: 'Exact match', example: 'value', requiresValue: true },
+        { operator: '$ne', description: 'Not equal to', example: 'value', requiresValue: true },
+        { operator: '$regex', description: 'Pattern matching', example: 'pattern', requiresValue: true },
+        { operator: '$in', description: 'In array', example: '[val1,val2]', requiresValue: true },
+        { operator: '$nin', description: 'Not in array', example: '[val1,val2]', requiresValue: true },
+        { operator: '$exists', description: 'Field exists', example: 'true', requiresValue: true },
+        { operator: '$text', description: 'Full text search', example: 'search terms', requiresValue: true },
         { operator: '$size', description: 'Array size', example: '5', requiresValue: true },
       ];
     
@@ -134,7 +138,7 @@ function formatDistanceToNow(timestamp: number): string {
 }
 
 export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
-  const { executeFilterQuery, clearQuery, isLoading, isQueryActive, queryFilter } = useAppStore();
+  const { executeFilterQuery, clearQuery, isLoading, isQueryActive, queryFilter, tableData, totalCount } = useAppStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState<boolean>(false);
   const [currentWord, setCurrentWord] = useState<string>("");
@@ -143,19 +147,62 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
     { search: string; timestamp: number }[]
   >("data-table-filter-command", []);
 
-  // Get available filter fields from table columns
-  const filterFields: FilterField[] = table.getAllColumns()
-    .filter(col => col.getCanFilter())
-    .map(col => ({
-      value: col.id,
-      label: col.id,
-      type: getColumnType(col.id, table.getCoreRowModel().rows[0]?.original)
-    }));
+  // Get available filter fields from table columns + nested fields
+  const filterFields: FilterField[] = useMemo(() => {
+    const basicFields = table.getAllColumns()
+      .filter(col => col.getCanFilter())
+      .map(col => ({
+        value: col.id,
+        label: col.id,
+        type: getColumnType(col.id, table.getCoreRowModel().rows[0]?.original)
+      }));
+    
+    // Extract nested fields from sample data
+    const nestedFields: FilterField[] = [];
+    const sampleData = table.getCoreRowModel().rows[0]?.original;
+    
+    if (sampleData) {
+      Object.entries(sampleData).forEach(([key, value]) => {
+        if (value && typeof value === 'object' && !Array.isArray(value) && value.constructor === Object) {
+          // This is a nested object, extract its keys
+          Object.entries(value).forEach(([nestedKey, nestedValue]) => {
+            const fullPath = `${key}.${nestedKey}`;
+            nestedFields.push({
+              value: fullPath,
+              label: fullPath,
+              type: getNestedFieldType(nestedValue)
+            });
+          });
+        } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
+          // This is an array of objects, extract keys from first object
+          Object.entries(value[0]).forEach(([nestedKey, nestedValue]) => {
+            const fullPath = `${key}.${nestedKey}`;
+            nestedFields.push({
+              value: fullPath,
+              label: fullPath,
+              type: getNestedFieldType(nestedValue)
+            });
+          });
+        }
+      });
+    }
+    
+    return [...basicFields, ...nestedFields];
+  }, [table, tableData]);
 
   function getColumnType(columnId: string, sampleData: any): 'text' | 'number' | 'date' | 'boolean' {
     if (!sampleData) return 'text';
     const value = sampleData[columnId];
     
+    if (value === null || value === undefined) return 'text';
+    if (typeof value === 'number') return 'number';
+    if (typeof value === 'boolean') return 'boolean';
+    if (value instanceof Date) return 'date';
+    if (typeof value === 'string' && !isNaN(Date.parse(value))) return 'date';
+    return 'text';
+  }
+
+  function getNestedFieldType(value: any): 'text' | 'number' | 'date' | 'boolean' {
     if (value === null || value === undefined) return 'text';
     if (typeof value === 'number') return 'number';
     if (typeof value === 'boolean') return 'boolean';
@@ -178,7 +225,36 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
       
       if (!field || !remainder) return;
       
-      const fieldConfig = filterFields.find(f => f.value === field);
+      // Handle nested fields with dot notation (e.g., "footnotes.title")
+      // For nested fields, we need to guess the type or default to text
+      let fieldConfig = filterFields.find(f => f.value === field);
+      if (!fieldConfig && field.includes('.')) {
+        // Try to determine type from actual data
+        let detectedType: 'text' | 'number' | 'date' | 'boolean' = 'text';
+        const sampleData = table.getCoreRowModel().rows[0]?.original;
+        if (sampleData) {
+          const fieldPath = field.split('.');
+          let current = sampleData;
+          for (const part of fieldPath) {
+            if (current && typeof current === 'object') {
+              current = current[part];
+            } else {
+              break;
+            }
+          }
+          if (current !== undefined) {
+            detectedType = getNestedFieldType(current);
+          }
+        }
+        
+        // Create a virtual field config for nested fields
+        fieldConfig = {
+          value: field,
+          label: field,
+          type: detectedType
+        };
+      }
+      
       if (!fieldConfig) return;
       
       // Check if remainder starts with MongoDB operator
@@ -249,12 +325,13 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
             filters[field] = { $regex: remainder, $options: 'i' };
             break;
           default:
-            // For text fields, use regex for partial matching
+            // For text fields, use exact match by default, regex only with wildcards
             if (remainder.includes('*') || remainder.includes('?')) {
               const regexValue = remainder.replace(/\*/g, '.*').replace(/\?/g, '.');
               filters[field] = { $regex: regexValue, $options: 'i' };
             } else {
-              filters[field] = { $regex: remainder, $options: 'i' };
+              // Exact string match for text fields
+              filters[field] = remainder;
             }
         }
         
@@ -413,8 +490,12 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
           </button>
         )}
         {isQueryActive && (
-          <div className="mr-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full" title="Filter active"></div>
+          <div className="mr-2 flex items-center">
+            {totalCount === 0 ? (
+              <div className="w-2 h-2 bg-orange-500 rounded-full" title="Filter active - no results found"></div>
+            ) : (
+              <div className="w-2 h-2 bg-green-500 rounded-full" title="Filter active"></div>
+            )}
           </div>
         )}
         <Kbd className="ml-auto text-muted-foreground group-hover:text-accent-foreground">
@@ -482,8 +563,8 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
         <div className="relative">
           <div className="absolute top-2 z-50 w-full overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md outline-none animate-in">
             <CommandList className="max-h-[310px]">
-              <CommandGroup heading="Filter">
-                {filterFields.map((field) => {
+              <CommandGroup heading="Fields">
+                {filterFields.filter(field => !field.value.includes('.')).map((field) => {
                   if (inputValue.includes(`${field.value}:`)) return null;
                   return (
                     <CommandItem
@@ -511,6 +592,43 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                       className="group"
                     >
                       <span className="capitalize">{field.label}</span>
+                      <span className="ml-auto text-xs text-muted-foreground capitalize">
+                        {field.type}
+                      </span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+              <CommandSeparator />
+              <CommandGroup heading="Nested Fields">
+                {filterFields.filter(field => field.value.includes('.')).map((field) => {
+                  if (inputValue.includes(`${field.value}:`)) return null;
+                  return (
+                    <CommandItem
+                      key={field.value}
+                      value={field.value}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onSelect={(value) => {
+                        setInputValue((prev) => {
+                          if (currentWord.trim() === "") {
+                            return `${prev}${value}:`;
+                          }
+                          const isStarting = currentWord === prev;
+                          const prefix = isStarting ? "" : " ";
+                          const input = prev.replace(
+                            `${prefix}${currentWord}`,
+                            `${prefix}${value}`,
+                          );
+                          return `${input}:`;
+                        });
+                        setCurrentWord(`${value}:`);
+                      }}
+                      className="group"
+                    >
+                      <span className="font-mono text-blue-600">{field.label}</span>
                       <span className="ml-auto text-xs text-muted-foreground capitalize">
                         {field.type}
                       </span>
@@ -681,13 +799,16 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs">
                   <span>
-                    Basic: <Kbd variant="outline" className="text-xs">name:john</Kbd>
+                    Exact: <Kbd variant="outline" className="text-xs">name:john</Kbd>
+                  </span>
+                  <span>
+                    Pattern: <Kbd variant="outline" className="text-xs">name:*john*</Kbd>
                   </span>
                   <span>
                     Operator: <Kbd variant="outline" className="text-xs">age:$gte:25</Kbd>
                   </span>
                   <span>
-                    Array: <Kbd variant="outline" className="text-xs">status:$in:[active,pending]</Kbd>
+                    Nested: <Kbd variant="outline" className="text-xs">footnotes.type:chapter_title</Kbd>
                   </span>
                 </div>
               </div>
