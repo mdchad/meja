@@ -18,9 +18,6 @@ export function ConnectionManager() {
     isConnected,
     isConnecting,
     connectionError,
-    selectedCollection,
-    selectedDatabase,
-    connectionConfig,
     connect,
     disconnect
   } = useAppStore();
