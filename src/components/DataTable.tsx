@@ -236,6 +236,33 @@ export function DataTable() {
           </div>
         </div>
       ) : null}
+
+      {/* Results Counter */}
+      {selectedCollection && !isLoading && (
+        <div className="flex items-center justify-between mb-3 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            {isQueryActive ? (
+              <span className="flex items-center gap-1">
+                <Filter className="h-4 w-4 text-green-600" />
+                <span className="font-medium text-foreground">{totalCount.toLocaleString()}</span>
+                <span>filtered results</span>
+                {totalCount === 0 && <span className="text-orange-600">(no matches)</span>}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1">
+                <span className="font-medium text-foreground">{totalCount.toLocaleString()}</span>
+                <span>documents in {selectedCollection}</span>
+              </span>
+            )}
+          </div>
+          <div className="text-xs">
+            {currentPage > 1 && (
+              <span>Showing page {currentPage} of {Math.ceil(totalCount / pageSize)}</span>
+            )}
+          </div>
+        </div>
+      )}
+      
       <div
         className={`w-full border overflow-hidden ${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`}
       >
