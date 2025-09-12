@@ -90,6 +90,7 @@ export interface AppState {
   executeQuery: (query: string) => Promise<void>;
   executeFilterQuery: (filterObject: Record<string, unknown>) => Promise<void>;
   clearQuery: () => void;
+  initializeConnection: () => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -136,6 +137,15 @@ export const useAppStore = create<AppState>((set, get) => ({
         collections: result[dbName].collections?.map((col: any) => col.name) || []
       }));
 
+      // Save connection config to localStorage for persistence
+      try {
+        localStorage.setItem('mongodb-connection-config', JSON.stringify(config));
+        localStorage.setItem('mongodb-selected-database', get().selectedDatabase || '');
+        localStorage.setItem('mongodb-selected-collection', get().selectedCollection || '');
+      } catch (error) {
+        console.warn('Failed to save connection config to localStorage:', error);
+      }
+
       set({
         connectionConfig: config,
         isConnected: true,
@@ -157,6 +167,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   disconnect: async () => {
     try {
         // No disconnect command needed for sync approach
+        
+        // Clear localStorage on disconnect
+        localStorage.removeItem('mongodb-connection-config');
+        localStorage.removeItem('mongodb-selected-database');
+        localStorage.removeItem('mongodb-selected-collection');
     } catch (error) {
       console.warn('Error disconnecting:', error);
     }
@@ -176,6 +191,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Select a database
   selectDatabase: async (dbName: string) => {
     set({ selectedDatabase: dbName, selectedCollection: null, tableData: [], totalCount: 0 });
+    try {
+      localStorage.setItem('mongodb-selected-database', dbName);
+      localStorage.removeItem('mongodb-selected-collection'); // Clear collection when changing database
+    } catch (error) {
+      console.warn('Failed to save selected database to localStorage:', error);
+    }
   },
 
   // Select a collection and load its data
@@ -184,6 +205,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!selectedDatabase) return;
 
     set({ selectedCollection: collectionName, isLoading: true, currentQuery: '', queryError: null, isQueryActive: false });
+    
+    // Save selected collection to localStorage
+    try {
+      localStorage.setItem('mongodb-selected-collection', collectionName);
+    } catch (error) {
+      console.warn('Failed to save selected collection to localStorage:', error);
+    }
     
     try {
       const documents = await mongodb_find_documents({
@@ -361,15 +389,96 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   // Clear the current query
-  clearQuery: () => {
-    const state = get();
+  clearQuery: async () => {
+    const { selectedDatabase, selectedCollection, pageSize } = get();
+    if (!selectedDatabase || !selectedCollection) return;
+
     set({ 
       currentQuery: '', 
       queryError: null, 
       queryFilter: {}, 
-      isQueryActive: false 
+      isQueryActive: false,
+      isLoading: true,
+      currentPage: 1
     });
-    // Reload data without filters
-    state.loadTableData(1);
+
+    try {
+      // Reload data without any filters
+      const documents = await mongodb_find_documents({
+        databaseName: selectedDatabase,
+        collectionName: selectedCollection,
+        page: 0,
+        perPage: pageSize,
+        documentsFilter: {}, // Explicitly empty filter
+        documentsProjection: {},
+        documentsSort: {}
+      });
+      
+      // Get total count without filters
+      const total_count = await mongodb_count_documents({
+        databaseName: selectedDatabase,
+        collectionName: selectedCollection,
+        documentsFilter: {} // Explicitly empty filter
+      });
+      
+      set({
+        tableData: formatDocumentData(documents),
+        totalCount: total_count,
+        isLoading: false
+      });
+    } catch (error) {
+      console.error('Failed to clear query and reload data:', error);
+      set({ 
+        isLoading: false,
+        connectionError: typeof error === 'string' ? error : 'Failed to reload data'
+      });
+    }
+  },
+
+  // Initialize connection from localStorage
+  initializeConnection: async () => {
+    try {
+      const savedConfig = localStorage.getItem('mongodb-connection-config');
+      const savedDatabase = localStorage.getItem('mongodb-selected-database');
+      const savedCollection = localStorage.getItem('mongodb-selected-collection');
+      
+      if (!savedConfig) {
+        console.log('No saved connection found in localStorage');
+        return;
+      }
+
+      const config: ConnectionConfig = JSON.parse(savedConfig);
+      console.log('Attempting to restore connection...');
+
+      // Attempt to reconnect
+      await get().connect(config);
+
+      // Restore database selection if it exists
+      if (savedDatabase) {
+        const { databases } = get();
+        const dbExists = databases.some(db => db.name === savedDatabase);
+        if (dbExists) {
+          await get().selectDatabase(savedDatabase);
+
+          // Restore collection selection if it exists
+          if (savedCollection) {
+            const selectedDb = databases.find(db => db.name === savedDatabase);
+            const collectionExists = selectedDb?.collections.includes(savedCollection);
+            if (collectionExists) {
+              await get().selectCollection(savedCollection);
+            }
+          }
+        }
+      }
+
+      console.log('Connection restored successfully');
+    } catch (error) {
+      console.warn('Failed to restore connection:', error);
+      // Don't show error to user on auto-reconnect failure, just silently fail
+      set({ 
+        connectionError: null, // Clear any connection error from failed auto-reconnect
+        isConnecting: false 
+      });
+    }
   }
 }));

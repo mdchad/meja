@@ -371,7 +371,9 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
 
   // Function to execute the filter
   const handleFilterSubmit = () => {
+    console.log('handleFilterSubmit called with:', inputValue); // Debug log
     const filters = parseFilterInput(inputValue);
+    console.log('Parsed filters:', filters); // Debug log
     executeFilterQuery(filters);
     setOpen(false);
   };
@@ -448,7 +450,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
       <button
         type="button"
         className={cn(
-          "cursor-pointer group flex w-full items-center rounded-lg border border-input bg-background px-3 text-muted-foreground ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:bg-accent/50 hover:text-accent-foreground",
+          "cursor-pointer group flex w-full items-center rounded-md border border-input bg-background px-3 text-muted-foreground ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:bg-accent/50 hover:text-accent-foreground",
           open ? "hidden" : "visible",
         )}
         onClick={(e) => {
@@ -476,43 +478,45 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
             <span>Filter data table...</span>
           )}
         </span>
-        {isQueryActive && inputValue.trim() && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              clearQuery();
-              setInputValue('');
-            }}
-            className="mr-2 p-1 rounded hover:bg-accent"
-            title="Clear filter"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        )}
-        {isQueryActive && (
-          <div className="mr-2 flex items-center">
-            {totalCount === 0 ? (
-              <div className="w-2 h-2 bg-orange-500 rounded-full" title="Filter active - no results found"></div>
-            ) : (
-              <div className="w-2 h-2 bg-green-500 rounded-full" title="Filter active"></div>
-            )}
-          </div>
-        )}
-        <Kbd className="ml-auto text-muted-foreground group-hover:text-accent-foreground">
-          <span className="mr-1">⌘</span>
-          <span>K</span>
-        </Kbd>
+        <div className="flex ml-auto">
+          {isQueryActive && inputValue.trim() && (
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                setInputValue('');
+                await clearQuery();
+              }}
+              className="mr-2 p-1 rounded hover:bg-accent"
+              title="Clear filter"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+          {isQueryActive && (
+            <div className="mr-2 flex items-center">
+              {totalCount === 0 ? (
+                <div className="w-2 h-2 bg-orange-500 rounded-full" title="Filter active - no results found"></div>
+              ) : (
+                <div className="w-2 h-2 bg-green-500 rounded-full" title="Filter active"></div>
+              )}
+            </div>
+          )}
+          <Kbd className="ml-auto text-muted-foreground group-hover:text-accent-foreground">
+            <span className="mr-1">⌘</span>
+            <span>K</span>
+          </Kbd>
+        </div>
       </button>
       <Command
         className={cn(
-          "overflow-visible rounded-lg border border-border shadow-md dark:bg-muted/50 [&>div]:border-none",
+          "overflow-visible rounded-md border border-border shadow-md dark:bg-muted/50 [&>div]:border-none",
           open ? "visible" : "hidden",
         )}
         filter={(value, search, keywords) =>
           getFilterValue({ value, search, keywords: keywords || [], currentWord })
         }
       >
-        <div className="flex items-center border-b">
+        <div className="flex items-center">
           <div className="flex-1">
             <CommandInput
               ref={inputRef}
@@ -552,8 +556,16 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
             />
           </div>
           <button
-            onClick={handleFilterSubmit}
-            className="flex-shrink-0 p-2 hover:bg-accent rounded-md mr-2 text-muted-foreground hover:text-foreground"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleFilterSubmit();
+            }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            className="flex-shrink-0 p-2 hover:bg-accent rounded-md mr-2 text-muted-foreground hover:text-foreground cursor-pointer"
             title="Execute filter (Cmd+Enter)"
             disabled={!inputValue.trim()}
           >
@@ -762,7 +774,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
               <CommandEmpty>No results found.</CommandEmpty>
             </CommandList>
             <div
-              className="border-t bg-accent/50 px-2 py-1.5 text-xs text-accent-foreground"
+              className="border-t bg-neutral-200/50 px-2 py-1.5 text-xs text-accent-foreground"
               cmdk-footer=""
             >
               <div className="flex flex-col gap-2">
@@ -775,7 +787,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                     <Kbd variant="outline">Enter</Kbd> to select
                   </span>
                   <span>
-                    <Kbd variant="outline">⌘ Enter</Kbd> to execute
+                    <Kbd variant="outline">⌘ + Enter</Kbd> to execute
                   </span>
                   <span>
                     <Kbd variant="outline">Esc</Kbd> to close
