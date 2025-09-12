@@ -285,7 +285,10 @@ export function DataTable() {
         ) : null}
         <div className="max-h-[calc(100vh-275px)] overflow-auto">
           <Table
-            className={`${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''} border-separate border-spacing-0`}
+            className={cn(
+              "border-separate border-spacing-0",
+              table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''
+            )}
             style={{
               ...columnSizeVars,
               width: table.getCenterTotalSize(),
