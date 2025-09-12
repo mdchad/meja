@@ -63,7 +63,7 @@ Simply provide your connection details in the connection dialog, and Meja will h
 
 ## Project Structure
 
-This project is created from https://github.com/voidique/tauri-shadcn-tailwind-boilerplate
+This project is created from [voidique/tauri-shadcn-tailwind-boilerplate](https://github.com/voidique/tauri-shadcn-tailwind-boilerplate). Inspired from [hbina/mongodb-gui](https://github.com/hbina/mongodb-gui)
 
 ```
 src/
