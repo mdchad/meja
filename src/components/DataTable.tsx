@@ -262,6 +262,7 @@ export function DataTable() {
             size="sm"
             variant="outline"
             title="Refresh collection data"
+            className="cursor-pointer"
           >
             <RotateCcw className="size-4" />
           </Button>
