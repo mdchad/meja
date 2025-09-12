@@ -334,12 +334,9 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
               filters[field] = remainder;
             }
         }
-        
-        console.log(`Parsed simple query:`, { field, remainder, result: filters[field] });
       }
     });
     
-    console.log(`Final parsed filters:`, filters);
     return filters;
   }
 
@@ -371,9 +368,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
 
   // Function to execute the filter
   const handleFilterSubmit = () => {
-    console.log('handleFilterSubmit called with:', inputValue); // Debug log
     const filters = parseFilterInput(inputValue);
-    console.log('Parsed filters:', filters); // Debug log
     executeFilterQuery(filters);
     setOpen(false);
   };

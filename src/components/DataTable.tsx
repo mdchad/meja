@@ -36,8 +36,9 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  Filter,
+  Filter, RotateCcw,
 } from 'lucide-react';
+import { cn } from '@/lib/utils.ts';
 
 function getColumnType(value: any): string {
   if (value === null || value === undefined) return 'text';
@@ -172,6 +173,10 @@ export function DataTable() {
     }
   };
 
+  const handleRefresh = async () => {
+    await loadTableData(currentPage);
+  };
+
   if (!selectedCollection) {
     return (
       <div className="min-h-[calc(100vh-50vh)] flex items-end justify-center">
@@ -228,17 +233,8 @@ export function DataTable() {
         {/*</div>*/}
       </div>
 
-      {isLoading ? (
-        <div className="absolute flex-1 flex items-center justify-center top-1/2 left-1/2">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin" />
-            <p className="text-muted-foreground">Loading collection data...</p>
-          </div>
-        </div>
-      ) : null}
-
       {/* Results Counter */}
-      {selectedCollection && !isLoading && (
+      {selectedCollection && (
         <div className="flex items-center justify-between mb-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             {isQueryActive ? (
@@ -260,12 +256,33 @@ export function DataTable() {
               <span>Showing page {currentPage} of {Math.ceil(totalCount / pageSize)}</span>
             )}
           </div>
+          <Button
+            onClick={handleRefresh}
+            disabled={isLoading}
+            size="sm"
+            variant="outline"
+            title="Refresh collection data"
+          >
+            <RotateCcw className="size-4" />
+          </Button>
         </div>
       )}
       
       <div
-        className={`w-full border overflow-hidden ${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''}`}
+        className={cn(
+          "w-full border overflow-hidden relative",
+          table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : '',
+          isLoading && 'opacity-30'
+        )}
       >
+        {isLoading ? (
+          <div className="absolute flex-1 flex items-center justify-center top-1/2 left-1/2">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin stroke-black" />
+              {/*<p className="text-black">Loading collection data...</p>*/}
+            </div>
+          </div>
+        ) : null}
         <div className="max-h-[calc(100vh-275px)] overflow-auto">
           <Table
             className={`${table.getState().columnSizingInfo.isResizingColumn ? 'select-none' : ''} border-separate border-spacing-0`}
