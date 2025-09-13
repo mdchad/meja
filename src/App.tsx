@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import {useEffect, useState} from 'react';
 import { ConnectionManager } from '@/components/ConnectionManager';
 import { DatabaseSidebar } from '@/components/DatabaseSidebar';
 import { DataTable } from '@/components/DataTable';
@@ -7,6 +7,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 
 function App() {
   const { isConnected, selectedCollection, selectedDatabase, initializeConnection } = useAppStore();
+  const [showRightPanel, setShowRightPanel] = useState(false);
 
   // Initialize connection on app startup
   useEffect(() => {
@@ -20,11 +21,11 @@ function App() {
         direction="horizontal"
         className="h-svh min-w-0"
       >
-        <ResizablePanel defaultSize={15} maxSize={40}>
+        <ResizablePanel defaultSize={15} maxSize={40} order={1}>
           <DatabaseSidebar />
         </ResizablePanel>
         <ResizableHandle />
-        <ResizablePanel className="min-w-0">
+        <ResizablePanel className="min-w-0" order={2}>
           {/*<div className="min-w-0">*/}
             <header className="border-b border-tint-100 bg-tint-300 flex-shrink-0">
               <div className="grid grid-cols-[1fr_auto]">
@@ -47,10 +48,16 @@ function App() {
             <div className="flex-1 min-h-0">
               <DataTable />
             </div>
-          {/*</div>*/}
         </ResizablePanel>
+        { showRightPanel && (
+          <>
+            <ResizableHandle />
+            <ResizablePanel id="right" order={3} defaultSize={15} maxSize={40}>
+              <div className="h-full"></div>
+            </ResizablePanel>
+          </>
+        )}
       </ResizablePanelGroup>
-      {/*</div>*/}
     </div>
   );
 }
