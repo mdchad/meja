@@ -2,7 +2,7 @@
 
 A modern GUI database client built with Tauri v2, designed to connect to any local or cloud database with a beautiful, intuitive interface.
 
-![Screenshot of the app](/src/assets/readme-screenshot.png)
+![Screenshot of the app](/public/readme-screenshot.png)
 
 ## Features
 
