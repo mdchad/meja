@@ -200,7 +200,7 @@ export function DataTable() {
   // }
 
   return (
-    <div className="flex flex-col w-full h-full relative">
+    <div className="flex flex-col w-full h-full relative p-4">
       <div className="mb-4 flex-shrink-0">
         {/*<div className="flex items-center justify-between mb-4">*/}
         {/*  <div>*/}
@@ -218,7 +218,7 @@ export function DataTable() {
         {/*</div>*/}
 
         {/* Advanced Filter Command */}
-        <div className="mb-4 px-4">
+        <div className="mb-4">
           <DataTableFilterCommand table={table} />
         </div>
 
@@ -235,7 +235,7 @@ export function DataTable() {
 
       {/* Results Counter */}
       {selectedCollection && (
-        <div className="flex items-center justify-between mb-3 text-sm text-muted-foreground px-4">
+        <div className="flex items-center justify-between mb-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             {isQueryActive ? (
               <span className="flex items-center gap-1">
