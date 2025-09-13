@@ -427,7 +427,7 @@ function DataTableBody({ table }: { table: TanStackTable<any>; columns: any[] })
             return (
               <TableCell
                 key={cell.id}
-                className="truncate border-r border-gray-100"
+                className="truncate border-r border-gray-100 text-neutral-600"
                 // title={tooltipContent} // Show full content in tooltip
                 style={{
                   width: `calc(var(--col-${cell.column.id}-size) * 1px)`,

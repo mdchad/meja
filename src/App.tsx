@@ -14,7 +14,7 @@ function App() {
   }, [initializeConnection]);
 
   return (
-    <div className="min-h-screen bg-background w-screen font-sans">
+    <div className="min-h-screen bg-background w-screen font-geist-mono">
       {/*<div className="grid grid-cols-[200px_1fr] min-w-0 h-screen">*/}
       <ResizablePanelGroup
         direction="horizontal"
@@ -33,7 +33,7 @@ function App() {
                 {/*</div>*/}
                 <div data-tauri-drag-region className="flex flex-1 w-full items-center px-6">
                   {isConnected && (
-                    <h2 className="text-base font-semibold">
+                    <h2 className="text-base font-light">
                       <span className="text-zinc-600/50">{selectedDatabase} / </span>
                       <span>{selectedCollection}</span>
                     </h2>

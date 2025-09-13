@@ -2,6 +2,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@font-face {
+  font-family: Geist Mono;
+  font-style: normal;
+  font-weight: 200 700;
+  font-display: swap;
+  src: url("/assets/fonts/GeistMono.ttf") format("ttf");
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -41,6 +49,7 @@
   --color-tint-100: rgb(231, 231, 230);
   --color-tint-200: rgb(242, 242, 241);
   --color-tint-300: rgb(250, 250, 249);
+  --font-geist-mono: Geist Mono, monospace;
 }
 
 :root {
