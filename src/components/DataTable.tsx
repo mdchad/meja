@@ -25,6 +25,13 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { QueryInput } from '@/components/QueryInput';
 import { DataTableFilterCommand } from '@/components/DataTableFilterCommand';
 import { useAppStore } from '@/lib/store';
@@ -251,11 +258,11 @@ export function DataTable() {
               </span>
             )}
           </div>
-          <div className="text-xs">
-            {currentPage > 1 && (
-              <span>Showing page {currentPage} of {Math.ceil(totalCount / pageSize)}</span>
-            )}
-          </div>
+          {/*<div className="text-xs">*/}
+          {/*  {currentPage > 1 && (*/}
+          {/*    <span>Showing page {currentPage} of {Math.ceil(totalCount / pageSize)}</span>*/}
+          {/*  )}*/}
+          {/*</div>*/}
           <Button
             onClick={handleRefresh}
             disabled={isLoading}
@@ -362,6 +369,23 @@ export function DataTable() {
       {/* Pagination */}
       <div className="flex items-center justify-between space-x-2 py-4 flex-shrink-0">
         <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 text-sm">
+            <p className="text-sm text-muted-foreground">Rows per page</p>
+            <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(Number(value))}>
+              <SelectTrigger className="h-6 w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+                <SelectItem value="200">200</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2">
           <p className="text-sm font-medium">
             {totalCount === 0 && isQueryActive ? (
               "No results found"
@@ -369,29 +393,13 @@ export function DataTable() {
               `Page ${currentPage} of ${totalPages}`
             )}
           </p>
-          <div className="flex items-center space-x-2">
-            <p className="text-sm text-muted-foreground">Rows per page</p>
-            <select
-              value={pageSize}
-              onChange={e => setPageSize(Number(e.target.value))}
-              className="h-8 w-16 rounded border border-input bg-background px-2 text-sm"
-            >
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-              <option value={200}>200</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage <= 1 || isLoading}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="size-4" />
             Previous
           </Button>
           <Button
