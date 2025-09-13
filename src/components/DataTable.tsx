@@ -102,7 +102,7 @@ export function DataTable() {
               className="h-auto p-2 font-medium hover:bg-transparent w-full cursor-pointer select-none"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
-              <div className="flex items-center justify-between w-full select-none">
+              <div className="flex items-center gap-4 w-full select-none">
                 <span className="truncate">{key}</span>
                 {getSortIcon()}
               </div>
@@ -200,7 +200,7 @@ export function DataTable() {
   // }
 
   return (
-    <div className="flex flex-col p-4 w-full h-full relative">
+    <div className="flex flex-col w-full h-full relative">
       <div className="mb-4 flex-shrink-0">
         {/*<div className="flex items-center justify-between mb-4">*/}
         {/*  <div>*/}
@@ -218,7 +218,7 @@ export function DataTable() {
         {/*</div>*/}
 
         {/* Advanced Filter Command */}
-        <div className="mb-4">
+        <div className="mb-4 px-4">
           <DataTableFilterCommand table={table} />
         </div>
 
@@ -235,7 +235,7 @@ export function DataTable() {
 
       {/* Results Counter */}
       {selectedCollection && (
-        <div className="flex items-center justify-between mb-3 text-sm text-muted-foreground">
+        <div className="flex items-center justify-between mb-3 text-sm text-muted-foreground px-4">
           <div className="flex items-center gap-2">
             {isQueryActive ? (
               <span className="flex items-center gap-1">
@@ -318,9 +318,7 @@ export function DataTable() {
                           onDoubleClick: () => header.column.resetSize(),
                           onMouseDown: header.getResizeHandler(),
                           onTouchStart: header.getResizeHandler(),
-                          className: `absolute top-0 h-full w-[1px] shadow-lg cursor-col-resize select-none touch-none bg-gray-200/50 right-0 ${
-                            header.column.getIsResizing() ? '!bg-blue-500 !opacity-100' : ''
-                          }`,
+                          className: `absolute bottom-2 h-6 cursor-ew-resize right-2 px-2`,
                           style: {
                             transform:
                               columnResizeMode === 'onEnd' && header.column.getIsResizing()
@@ -330,7 +328,9 @@ export function DataTable() {
                                 : '',
                           },
                         }}
-                      />
+                      >
+                        <div className="w-px bg-gray-200/50 h-full shrink-0"></div>
+                      </div>
                     </TableHead>
                   ))}
                 </TableRow>
@@ -427,7 +427,7 @@ function DataTableBody({ table }: { table: TanStackTable<any>; columns: any[] })
             return (
               <TableCell
                 key={cell.id}
-                className="truncate border-r border-gray-100 text-neutral-600"
+                className="truncate px-4 border-gray-100 text-neutral-600"
                 // title={tooltipContent} // Show full content in tooltip
                 style={{
                   width: `calc(var(--col-${cell.column.id}-size) * 1px)`,
