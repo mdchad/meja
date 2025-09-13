@@ -20,7 +20,7 @@ function App() {
         direction="horizontal"
         className="h-svh min-w-0"
       >
-        <ResizablePanel defaultSize={20} maxSize={40}>
+        <ResizablePanel defaultSize={15} maxSize={40}>
           <DatabaseSidebar />
         </ResizablePanel>
         <ResizableHandle />
