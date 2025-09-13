@@ -260,11 +260,11 @@ export function DataTable() {
             onClick={handleRefresh}
             disabled={isLoading}
             size="sm"
-            variant="outline"
+            variant="ghost"
             title="Refresh collection data"
-            className="cursor-pointer"
+            className="cursor-pointer rounded-none"
           >
-            <RotateCcw className="size-4" />
+            <RotateCcw className="size-4 stroke-[#e56f00]" />
           </Button>
         </div>
       )}
