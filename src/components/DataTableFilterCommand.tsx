@@ -179,18 +179,14 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
     return [...basicFields];
   }, [table, tableData]);
 
-  console.log("filterFields: ", filterFields);
-
   const nestedFields = useMemo(() => {
     const nestedFields: FilterField[] = [];
     const sampleData = table.getCoreRowModel().rows[0]?.original;
 
     if (sampleData) {
-      console.log("sample data", Object.entries(sampleData));
       Object.entries(sampleData).forEach(([key, value]) => {
         if (tryParseJSONObject(value as string)) {
           const parseValue = JSON.parse(value as string);
-          console.log("parseValue: ", parseValue);
           if (Array.isArray(parseValue) && parseValue.length > 0 && typeof parseValue[0] === 'object') {
             const entries = Object.entries(parseValue[0]);
             // This is an array of objects, extract keys from first object
@@ -207,8 +203,6 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
             const entries = Object.entries(parseValue);
             // This is a nested object, extract its keys
             entries.forEach(([nestedKey, nestedValue]) => {
-              console.log("nestedKey", nestedKey)
-              console.log("nestedValue", nestedValue)
               const fullPath = `${key}.${nestedKey}`;
               nestedFields.push({
                 value: fullPath,
@@ -459,9 +453,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
 
   function getFieldSuggestions(field: FilterField) {
     const column = table.getColumn(field.value);
-    console.log(column);
     const uniqueValues = column?.getFacetedUniqueValues();
-    console.log(uniqueValues?.keys());
 
 
     if (uniqueValues) {
@@ -620,7 +612,6 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                         e.stopPropagation();
                       }}
                       onSelect={(value) => {
-                        console.log(value)
                         setInputValue((prev) => {
                           if (currentWord.trim() === "") {
                             return `${prev}${value}:`;
