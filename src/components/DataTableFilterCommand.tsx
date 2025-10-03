@@ -92,10 +92,10 @@ function getWordByCaretPosition({ value, caretPosition }: { value: string; caret
   let start = caretPosition;
   let end = caretPosition;
 
-  while (start > 0 && value[start - 1] !== " ") start--;
-  while (end < value.length && value[end] !== " ") end++;
+  while (start > 0 && value[start - 1] !== ",") start--;
+  while (end < value.length && value[end] !== ",") end++;
 
-  return value.substring(start, end);
+  return value.substring(start, end).trim();
 }
 
 function getFilterValue({ value, search, currentWord }: { value: string; search: string; currentWord: string }): number {
@@ -213,7 +213,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
 
   function parseFilterInput(input: string): Record<string, unknown> {
     const filters: Record<string, unknown> = {};
-    const parts = input.trim().split(' ').filter(part => part.includes(':'));
+    const parts = input.trim().split(',').map(part => part.trim()).filter(part => part.includes(':'));
     
     parts.forEach(part => {
       // Split more carefully to handle operator syntax: field:$operator:value
@@ -363,7 +363,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
         parts.push(`${key}:${value}`);
       }
     });
-    return parts.join(' ');
+    return parts.join(',');
   }
 
   // Function to execute the filter
@@ -588,7 +588,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                             return `${prev}${value}:`;
                           }
                           const isStarting = currentWord === prev;
-                          const prefix = isStarting ? "" : " ";
+                          const prefix = isStarting ? "" : ",";
                           const input = prev.replace(
                             `${prefix}${currentWord}`,
                             `${prefix}${value}`,
@@ -625,7 +625,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                             return `${prev}${value}:`;
                           }
                           const isStarting = currentWord === prev;
-                          const prefix = isStarting ? "" : " ";
+                          const prefix = isStarting ? "" : ",";
                           const input = prev.replace(
                             `${prefix}${currentWord}`,
                             `${prefix}${value}`,
@@ -708,7 +708,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                       onSelect={() => {
                         setInputValue((prev) => {
                           const input = prev.replace(currentWord, `${field.value}:${optionValue}`);
-                          return `${input.trim()} `;
+                          return `${input.trim()},`;
                         });
                         setCurrentWord("");
                       }}
@@ -738,7 +738,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                       }}
                       onSelect={(value) => {
                         const search = value.replace("suggestion:", "");
-                        setInputValue(`${search} `);
+                        setInputValue(`${search},`);
                         setCurrentWord("");
                       }}
                       className="group"
@@ -808,6 +808,9 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                 <div className="flex flex-wrap gap-2 text-xs">
                   <span>
                     Exact: <Kbd variant="outline" className="text-xs">name:john</Kbd>
+                  </span>
+                  <span>
+                    Multiple: <Kbd variant="outline" className="text-xs">name:john,age:25</Kbd>
                   </span>
                   <span>
                     Pattern: <Kbd variant="outline" className="text-xs">name:*john*</Kbd>
