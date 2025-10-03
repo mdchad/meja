@@ -452,14 +452,40 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
   }, [open]);
 
   function getFieldSuggestions(field: FilterField) {
+    // Handle nested fields (e.g., "book_title.ms")
+    if (field.value.includes('.')) {
+      const [parentField, nestedKey] = field.value.split('.');
+      const values = new Set();
+
+      table.getCoreRowModel().rows.forEach(row => {
+        const parentValue = row.original[parentField];
+        if (parentValue && tryParseJSONObject(parentValue as string)) {
+          const parsedValue = JSON.parse(parentValue as string);
+
+          // Handle both objects and arrays of objects
+          if (Array.isArray(parsedValue)) {
+            parsedValue.forEach(item => {
+              if (item && typeof item === 'object' && item[nestedKey] !== undefined) {
+                values.add(item[nestedKey]);
+              }
+            });
+          } else if (parsedValue[nestedKey] !== undefined) {
+            values.add(parsedValue[nestedKey]);
+          }
+        }
+      });
+
+      return Array.from(values).slice(0, 10);
+    }
+
+    // Handle regular fields
     const column = table.getColumn(field.value);
     const uniqueValues = column?.getFacetedUniqueValues();
-
 
     if (uniqueValues) {
       return Array.from(uniqueValues.keys()).slice(0, 10);
     }
-    
+
     // Fallback: get unique values from visible data
     const values = new Set();
     table.getCoreRowModel().rows.forEach(row => {
@@ -468,7 +494,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
         values.add(value);
       }
     });
-    
+
     return Array.from(values).slice(0, 10);
   }
 
@@ -720,7 +746,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
               </CommandGroup>
               <CommandSeparator />
               <CommandGroup heading="Values">
-                {filterFields.map((field) => {
+                {[...filterFields, ...nestedFields].map((field) => {
                   // Show values when typing field: or field:$operator:
                   const isFieldQuery = currentWord.includes(`${field.value}:`);
                   if (!isFieldQuery) return null;
@@ -728,10 +754,10 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                   // Check if we're in operator mode
                   const parts = currentWord.split(':');
                   const isOperatorMode = parts.length >= 3 && parts[1].startsWith('$');
-                  
+
                   // Only show basic values if not in operator mode
                   if (isOperatorMode) return null;
-                  
+
                   const suggestions = getFieldSuggestions(field);
                   const column = table.getColumn(field.value);
                   const facetedValue = column?.getFacetedUniqueValues();
