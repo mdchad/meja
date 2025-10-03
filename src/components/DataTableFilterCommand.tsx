@@ -515,7 +515,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
               className="mr-2 p-1 rounded hover:bg-accent"
               title="Clear filter"
             >
-              <X className="h-3 w-3" />
+              <X className="size-4" />
             </button>
           )}
           {isQueryActive && (
@@ -527,7 +527,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
               )}
             </div>
           )}
-          <Kbd className="ml-auto text-muted-foreground group-hover:text-accent-foreground">
+          <Kbd className="ml-auto leading-loose text-muted-foreground group-hover:text-accent-foreground">
             <span className="mr-1">⌘</span>
             <span>K</span>
           </Kbd>
