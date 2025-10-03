@@ -3,6 +3,10 @@ import { useEffect } from "react";
 export function useHotKey(callback: () => void, key: string): void {
   useEffect(() => {
     function handler(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        callback();
+      }
+
       if (e.key === key && (e.metaKey || e.ctrlKey)) {
         // e.preventDefault();
         callback();

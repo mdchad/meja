@@ -392,6 +392,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
   }, [queryFilter, open]);
 
   useHotKey(() => setOpen((prev) => !prev), "k");
+  useHotKey(() => setOpen((prev) => prev ? false : prev), "Escape");
 
   useEffect(() => {
     if (open) {
