@@ -157,10 +157,10 @@ function tryParseJSONObject(jsonString: string){
 
 export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
   const { executeFilterQuery, clearQuery, isLoading, isQueryActive, queryFilter, tableData, totalCount } = useAppStore();
-  const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState<boolean>(false);
   const [currentWord, setCurrentWord] = useState<string>("");
   const [inputValue, setInputValue] = useState<string>("");
+  const commandListRef = useRef<HTMLInputElement>(null)
   const [lastSearches, setLastSearches] = useLocalStorage<
     { search: string; timestamp: number }[]
   >("data-table-filter-command", []);
@@ -424,33 +424,6 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
   useHotKey(() => setOpen((prev) => !prev), "k");
   useHotKey(() => setOpen((prev) => prev ? false : prev), "Escape");
 
-  useEffect(() => {
-    if (open) {
-      // Multiple attempts to ensure focus works
-      const focusInput = () => {
-        const input = inputRef?.current;
-        if (input) {
-          input.focus();
-          input.select();
-        } else {
-          // Fallback: try to find the actual input element
-          const commandInput = document.querySelector('[data-slot="command-input"]') as HTMLInputElement;
-          if (commandInput) {
-            commandInput.focus();
-            commandInput.select();
-          }
-        }
-      };
-      
-      // Try immediately
-      focusInput();
-      
-      // Try after a small delay to ensure DOM is ready
-      setTimeout(focusInput, 10);
-      setTimeout(focusInput, 50);
-    }
-  }, [open]);
-
   function getFieldSuggestions(field: FilterField) {
     // Handle nested fields (e.g., "book_title.ms")
     if (field.value.includes('.')) {
@@ -572,7 +545,6 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
         <div className="flex items-center">
           <div className="flex-1">
             <CommandInput
-              ref={inputRef}
               value={inputValue}
               onValueChange={setInputValue}
               onKeyDown={(e) => {
@@ -626,7 +598,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
         </div>
         <div className="relative">
           <div className="absolute top-2 z-50 w-full overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md outline-none animate-in">
-            <CommandList className="max-h-[310px]">
+            <CommandList className="max-h-[310px]" ref={commandListRef}>
               <CommandGroup heading="Fields">
                 {filterFields.filter(field => !field.value.includes('.')).map((field) => {
                   if (inputValue.includes(`${field.value}:`)) return null;
@@ -639,6 +611,8 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                         e.stopPropagation();
                       }}
                       onSelect={(value) => {
+                        commandListRef?.current?.scrollTo({ top: 0 })
+
                         setInputValue((prev) => {
                           if (currentWord.trim() === "") {
                             return `${prev}${value}:`;
@@ -685,6 +659,8 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                         e.stopPropagation();
                       }}
                       onSelect={(value) => {
+                        commandListRef?.current?.scrollTo({ top: 0 })
+
                         const actualValue = value.split(':')[1];
                         setInputValue((prev) => {
                           if (currentWord.trim() === "") {
@@ -726,6 +702,8 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                         e.stopPropagation();
                       }}
                       onSelect={() => {
+                        commandListRef?.current?.scrollTo({ top: 0 })
+
                         setInputValue((prev) => {
                           const input = prev.replace(currentWord, `${field.value}:${operator.operator}:`);
                           return input;
@@ -772,6 +750,8 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                         e.stopPropagation();
                       }}
                       onSelect={() => {
+                        commandListRef?.current?.scrollTo({ top: 0 })
+
                         setInputValue((prev) => {
                           const input = prev.replace(currentWord, `${field.value}:${optionValue}`);
                           return `${input.trim()},`;
@@ -803,6 +783,8 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                         e.stopPropagation();
                       }}
                       onSelect={(value) => {
+                        commandListRef?.current?.scrollTo({ top: 0 })
+
                         const search = value.replace("suggestion:", "");
                         setInputValue(`${search},`);
                         setCurrentWord("");
