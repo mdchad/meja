@@ -583,6 +583,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
               }}
               onBlur={() => {
                 setOpen(false);
+                setCurrentWord("");
                 const search = inputValue.trim();
                 if (!search) return;
                 const timestamp = Date.now();
@@ -778,7 +779,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                         setCurrentWord("");
                       }}
                     >
-                      {String(optionValue)}
+                      "{String(optionValue)}"
                       {facetedValue?.has(optionValue) && (
                         <span className="ml-auto font-mono text-muted-foreground">
                           {formatCompactNumber(facetedValue.get(optionValue) || 0)}
