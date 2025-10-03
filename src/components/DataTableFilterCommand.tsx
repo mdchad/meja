@@ -25,6 +25,7 @@ type FilterField = {
   value: string;
   label: string;
   type: 'text' | 'number' | 'date' | 'boolean';
+  parentField?: string;
 };
 
 type MongoOperator = {
@@ -137,6 +138,23 @@ function formatDistanceToNow(timestamp: number): string {
   return 'just now';
 }
 
+function tryParseJSONObject(jsonString: string){
+  try {
+    let o = JSON.parse(jsonString);
+
+    // Handle non-exception-throwing cases:
+    // Neither JSON.parse(false) or JSON.parse(1234) throw errors, hence the type-checking,
+    // but... JSON.parse(null) returns null, and typeof null === "object",
+    // so we must check for that, too. Thankfully, null is falsey, so this suffices:
+    if (o && typeof o === "object") {
+      return o;
+    }
+  }
+  catch (e) { }
+
+  return false;
+};
+
 export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
   const { executeFilterQuery, clearQuery, isLoading, isQueryActive, queryFilter, tableData, totalCount } = useAppStore();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -158,37 +176,55 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
       }));
     
     // Extract nested fields from sample data
+    return [...basicFields];
+  }, [table, tableData]);
+
+  console.log("filterFields: ", filterFields);
+
+  const nestedFields = useMemo(() => {
     const nestedFields: FilterField[] = [];
     const sampleData = table.getCoreRowModel().rows[0]?.original;
-    
+
     if (sampleData) {
+      console.log("sample data", Object.entries(sampleData));
       Object.entries(sampleData).forEach(([key, value]) => {
-        if (value && typeof value === 'object' && !Array.isArray(value) && value.constructor === Object) {
-          // This is a nested object, extract its keys
-          Object.entries(value).forEach(([nestedKey, nestedValue]) => {
-            const fullPath = `${key}.${nestedKey}`;
-            nestedFields.push({
-              value: fullPath,
-              label: fullPath,
-              type: getNestedFieldType(nestedValue)
+        if (tryParseJSONObject(value as string)) {
+          const parseValue = JSON.parse(value as string);
+          console.log("parseValue: ", parseValue);
+          if (Array.isArray(parseValue) && parseValue.length > 0 && typeof parseValue[0] === 'object') {
+            const entries = Object.entries(parseValue[0]);
+            // This is an array of objects, extract keys from first object
+            entries.forEach(([nestedKey, nestedValue]) => {
+              const fullPath = `${key}.${nestedKey}`;
+              nestedFields.push({
+                value: fullPath,
+                label: fullPath,
+                type: getNestedFieldType(nestedValue),
+                parentField: key
+              });
             });
-          });
-        } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
-          // This is an array of objects, extract keys from first object
-          Object.entries(value[0]).forEach(([nestedKey, nestedValue]) => {
-            const fullPath = `${key}.${nestedKey}`;
-            nestedFields.push({
-              value: fullPath,
-              label: fullPath,
-              type: getNestedFieldType(nestedValue)
-            });
-          });
+          } else {
+            const entries = Object.entries(parseValue);
+            // This is a nested object, extract its keys
+            entries.forEach(([nestedKey, nestedValue]) => {
+              console.log("nestedKey", nestedKey)
+              console.log("nestedValue", nestedValue)
+              const fullPath = `${key}.${nestedKey}`;
+              nestedFields.push({
+                value: fullPath,
+                label: fullPath,
+                type: getNestedFieldType(nestedValue),
+                parentField: key
+              });
+            })
+          }
+
         }
       });
     }
-    
-    return [...basicFields, ...nestedFields];
-  }, [table, tableData]);
+
+    return [...nestedFields];
+  }, [table, tableData])
 
   function getColumnType(columnId: string, sampleData: any): 'text' | 'number' | 'date' | 'boolean' {
     if (!sampleData) return 'text';
@@ -423,8 +459,11 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
 
   function getFieldSuggestions(field: FilterField) {
     const column = table.getColumn(field.value);
+    console.log(column);
     const uniqueValues = column?.getFacetedUniqueValues();
-    
+    console.log(uniqueValues?.keys());
+
+
     if (uniqueValues) {
       return Array.from(uniqueValues.keys()).slice(0, 10);
     }
@@ -508,8 +547,8 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
           "overflow-visible rounded-md border border-border shadow-md dark:bg-muted/50 [&>div]:border-none",
           open ? "visible" : "hidden",
         )}
-        filter={(value, search, keywords) =>
-          getFilterValue({ value, search, keywords: keywords || [], currentWord })
+        filter={(value, search) =>
+          getFilterValue({ value, search, currentWord })
         }
       >
         <div className="flex items-center">
@@ -519,9 +558,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
               value={inputValue}
               onValueChange={setInputValue}
               onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  inputRef?.current?.blur();
-                } else if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                   e.preventDefault();
                   handleFilterSubmit();
                 }
@@ -583,6 +620,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                         e.stopPropagation();
                       }}
                       onSelect={(value) => {
+                        console.log(value)
                         setInputValue((prev) => {
                           if (currentWord.trim() === "") {
                             return `${prev}${value}:`;
@@ -595,6 +633,8 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                           );
                           return `${input}:`;
                         });
+
+
                         setCurrentWord(`${value}:`);
                       }}
                       className="group"
@@ -609,30 +649,38 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
               </CommandGroup>
               <CommandSeparator />
               <CommandGroup heading="Nested Fields">
-                {filterFields.filter(field => field.value.includes('.')).map((field) => {
+                {nestedFields.map((field) => {
                   if (inputValue.includes(`${field.value}:`)) return null;
+
+                  const isFieldQuery = currentWord.split(':')
+
+                  const isFieldQueryHasParent = isFieldQuery.includes(`${field.parentField}`);
+
+                  if (!isFieldQueryHasParent) return null;
+
                   return (
                     <CommandItem
                       key={field.value}
-                      value={field.value}
+                      value={`${field.parentField}:${field.value}`}
                       onMouseDown={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                       }}
                       onSelect={(value) => {
+                        const actualValue = value.split(':')[1];
                         setInputValue((prev) => {
                           if (currentWord.trim() === "") {
-                            return `${prev}${value}:`;
+                            return `${prev}${actualValue}:`;
                           }
                           const isStarting = currentWord === prev;
                           const prefix = isStarting ? "" : ",";
                           const input = prev.replace(
                             `${prefix}${currentWord}`,
-                            `${prefix}${value}`,
+                            `${prefix}${actualValue}`,
                           );
                           return `${input}:`;
                         });
-                        setCurrentWord(`${value}:`);
+                        setCurrentWord(`${actualValue}:`);
                       }}
                       className="group"
                     >
