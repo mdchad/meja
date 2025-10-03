@@ -654,7 +654,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
 
                         setCurrentWord(`${value}:`);
                       }}
-                      className="group"
+                      className="group cursor-pointer"
                     >
                       <span className="capitalize">{field.label}</span>
                       <span className="ml-auto text-xs text-muted-foreground capitalize">
@@ -699,7 +699,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                         });
                         setCurrentWord(`${actualValue}:`);
                       }}
-                      className="group"
+                      className="group cursor-pointer"
                     >
                       <span className="font-mono text-blue-600">{field.label}</span>
                       <span className="ml-auto text-xs text-muted-foreground capitalize">
@@ -711,11 +711,11 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
               </CommandGroup>
               <CommandSeparator />
               <CommandGroup heading="Operators">
-                {filterFields.map((field) => {
+                {[...filterFields, ...nestedFields].map((field) => {
                   if (!currentWord.includes(`${field.value}:`)) return null;
-                  
+
                   const operators = getMongoOperators(field.type);
-                  
+
                   return operators.map((operator) => (
                     <CommandItem
                       key={`${field.value}:${operator.operator}`}
@@ -731,7 +731,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                         });
                         setCurrentWord(`${field.value}:${operator.operator}:`);
                       }}
-                      className="group"
+                      className="group cursor-pointer"
                     >
                       <div className="flex flex-col items-start">
                         <span className="font-mono text-blue-600">{operator.operator}</span>
@@ -806,7 +806,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                         setInputValue(`${search},`);
                         setCurrentWord("");
                       }}
-                      className="group"
+                      className="group cursor-pointer"
                     >
                       {item.search}
                       <span className="ml-auto truncate text-muted-foreground/80 group-aria-[selected=true]:block">
@@ -858,7 +858,7 @@ export function DataTableFilterCommand({ table }: DataTableFilterCommandProps) {
                       <Separator orientation="vertical" className="my-auto h-3" />
                       <button
                         type="button"
-                        className="text-muted-foreground hover:text-accent-foreground"
+                        className="text-muted-foreground hover:text-accent-foreground cursor-pointer"
                         onMouseDown={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
